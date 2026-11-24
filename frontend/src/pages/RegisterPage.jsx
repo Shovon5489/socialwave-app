@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
 import toast from 'react-hot-toast';
-import { Mail, Lock, User, AtSign } from 'lucide-react';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -21,7 +18,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.lastName || !formData.username || !formData.email || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
       toast.error('Please complete all required fields');
       return;
     }
@@ -36,108 +33,136 @@ export default function RegisterPage() {
       return;
     }
 
+    // Auto-generate username from name or email if empty
+    const derivedUsername = (formData.username || `${formData.firstName}${formData.lastName}${Math.floor(Math.random() * 1000)}`)
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '');
+
     try {
       setLoading(true);
       await register({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        username: formData.username.toLowerCase().trim(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        username: derivedUsername,
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
       });
-      toast.success('Account created! Welcome to SocialWave!');
+      toast.success('Account created! Welcome to Facebook!');
       navigate('/feed');
     } catch (err) {
-      toast.error(err.message || 'Registration failed. Try a different username/email.');
+      toast.error(err.message || 'Registration failed. Try a different email.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4 py-8">
-      <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-8 sm:p-10">
-        <div className="text-center mb-8">
-          <span className="text-4xl inline-block mb-2">🌊</span>
-          <h2 className="text-2xl font-bold text-gray-900">Join SocialWave</h2>
-          <p className="text-sm text-gray-500 mt-1">Create an account to start sharing with the world</p>
+    <div className="min-h-screen bg-[#F0F2F5] flex flex-col justify-between py-8 px-4">
+      <div className="max-w-md w-full mx-auto my-auto">
+        {/* Facebook Logo Header */}
+        <div className="text-center mb-6">
+          <Link to="/login">
+            <h1 className="text-5xl font-black text-[#1877F2] tracking-tighter">facebook</h1>
+          </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="First Name"
-              type="text"
-              placeholder="John"
-              icon={User}
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              required
-            />
-            <Input
-              label="Last Name"
-              type="text"
-              placeholder="Doe"
-              icon={User}
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              required
-            />
+        {/* Facebook Sign Up Card */}
+        <div className="bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="text-2xl font-bold text-[#1C1E21]">Create a new account</h2>
+            <p className="text-sm text-[#606770]">It's quick and easy.</p>
           </div>
 
-          <Input
-            label="Username"
-            type="text"
-            placeholder="johndoe"
-            icon={AtSign}
-            value={formData.username}
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            required
-          />
+          <form onSubmit={handleSubmit} className="p-4 space-y-3.5">
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                placeholder="First name"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                required
+                className="w-full px-3 py-2.5 bg-[#F5F6F7] border border-gray-300 rounded-md text-[15px] text-[#1C1E21] placeholder-[#8D949E] focus:bg-white focus:border-[#1877F2] outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Last name"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                required
+                className="w-full px-3 py-2.5 bg-[#F5F6F7] border border-gray-300 rounded-md text-[15px] text-[#1C1E21] placeholder-[#8D949E] focus:bg-white focus:border-[#1877F2] outline-none"
+              />
+            </div>
 
-          <Input
-            label="Email Address"
-            type="email"
-            placeholder="john@example.com"
-            icon={Mail}
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-          />
+            <div>
+              <input
+                type="text"
+                placeholder="Username (optional)"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                className="w-full px-3 py-2.5 bg-[#F5F6F7] border border-gray-300 rounded-md text-[15px] text-[#1C1E21] placeholder-[#8D949E] focus:bg-white focus:border-[#1877F2] outline-none"
+              />
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              icon={Lock}
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-            />
-            <Input
-              label="Confirm Password"
-              type="password"
-              placeholder="••••••••"
-              icon={Lock}
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              required
-            />
-          </div>
+            <div>
+              <input
+                type="email"
+                placeholder="Mobile number or email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                className="w-full px-3 py-2.5 bg-[#F5F6F7] border border-gray-300 rounded-md text-[15px] text-[#1C1E21] placeholder-[#8D949E] focus:bg-white focus:border-[#1877F2] outline-none"
+              />
+            </div>
 
-          <Button type="submit" loading={loading} className="w-full mt-4">
-            Create Account
-          </Button>
-        </form>
+            <div>
+              <input
+                type="password"
+                placeholder="New password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                className="w-full px-3 py-2.5 bg-[#F5F6F7] border border-gray-300 rounded-md text-[15px] text-[#1C1E21] placeholder-[#8D949E] focus:bg-white focus:border-[#1877F2] outline-none"
+              />
+            </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-primary hover:underline">
-              Sign in
-            </Link>
-          </p>
+            <div>
+              <input
+                type="password"
+                placeholder="Confirm password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                required
+                className="w-full px-3 py-2.5 bg-[#F5F6F7] border border-gray-300 rounded-md text-[15px] text-[#1C1E21] placeholder-[#8D949E] focus:bg-white focus:border-[#1877F2] outline-none"
+              />
+            </div>
+
+            <p className="text-[11px] text-[#777] leading-relaxed pt-1">
+              People who use our service may have uploaded your contact information to Facebook.{' '}
+              <a href="#" className="text-[#385898]">Learn more</a>.
+            </p>
+
+            <p className="text-[11px] text-[#777] leading-relaxed">
+              By clicking Sign Up, you agree to our <a href="#" className="text-[#385898]">Terms</a>,{' '}
+              <a href="#" className="text-[#385898]">Privacy Policy</a> and{' '}
+              <a href="#" className="text-[#385898]">Cookies Policy</a>.
+            </p>
+
+            <div className="text-center pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-12 py-2.5 bg-[#00A400] hover:bg-[#008A00] text-white font-bold text-[18px] rounded-md transition-colors shadow-sm disabled:opacity-50"
+              >
+                {loading ? 'Signing Up...' : 'Sign Up'}
+              </button>
+            </div>
+
+            <div className="text-center pt-2">
+              <Link to="/login" className="text-[14px] text-[#1877F2] hover:underline">
+                Already have an account?
+              </Link>
+            </div>
+          </form>
         </div>
       </div>
     </div>

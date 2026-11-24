@@ -385,61 +385,68 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
 
         {/* Stats */}
         {(likeCount > 0 || comments.length > 0 || (post.shares?.length || 0) > 0) && (
-          <div className="flex items-center justify-between px-4 py-2 mt-2 text-xs text-muted border-t border-gray-50">
-            <button className="flex items-center gap-1 hover:underline" onClick={() => setCommentsOpen(!commentsOpen)}>
+          <div className="flex items-center justify-between px-4 py-2 mt-2 text-xs text-[#65676B] border-t border-gray-100">
+            <button className="flex items-center gap-1.5 hover:underline" onClick={() => setCommentsOpen(!commentsOpen)}>
               {likeCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <span className="text-base">❤️</span>
-                  {formatNumber(likeCount)}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center -space-x-1">
+                    <span className="w-5 h-5 rounded-full bg-[#1877F2] flex items-center justify-center text-white text-[11px] shadow-sm">
+                      👍
+                    </span>
+                    <span className="w-5 h-5 rounded-full bg-[#FA383E] flex items-center justify-center text-white text-[11px] shadow-sm">
+                      ❤️
+                    </span>
+                  </div>
+                  <span className="text-[13px] font-normal text-[#65676B]">{formatNumber(likeCount)}</span>
+                </div>
               )}
             </button>
             <div className="flex items-center gap-3">
               {comments.length > 0 && (
-                <button onClick={() => setCommentsOpen(!commentsOpen)} className="hover:underline">
+                <button onClick={() => setCommentsOpen(!commentsOpen)} className="hover:underline text-[13px] text-[#65676B]">
                   {formatNumber(comments.length)} comment{comments.length !== 1 ? 's' : ''}
                 </button>
               )}
               {(post.shares?.length || 0) > 0 && (
-                <span>{formatNumber(post.shares.length)} share{post.shares.length !== 1 ? 's' : ''}</span>
+                <span className="text-[13px] text-[#65676B]">{formatNumber(post.shares.length)} share{post.shares.length !== 1 ? 's' : ''}</span>
               )}
             </div>
           </div>
         )}
 
-        {/* Action Bar */}
-        <div className="flex items-center border-t border-gray-100 mx-4">
+        {/* Action Bar (Facebook Like, Comment, Share) */}
+        <div className="flex items-center border-t border-[#CED0D4]/60 mx-3 py-1">
           <button
             onClick={handleLike}
             className={`
-              flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-              ${liked ? 'text-red-500' : 'text-muted hover:bg-gray-50 hover:text-dark'}
+              flex-1 flex items-center justify-center gap-2 py-2 text-[14px] font-semibold rounded-lg transition-colors
+              ${liked ? 'text-[#1877F2]' : 'text-[#65676B] hover:bg-[#F2F2F2]'}
             `}
           >
-            <Heart
-              className={`h-5 w-5 transition-transform ${likeAnimating ? 'animate-like-pulse' : ''} ${liked ? 'fill-red-500' : ''}`}
+            <ThumbsUp
+              className={`h-5 w-5 transition-transform ${likeAnimating ? 'animate-like-pulse' : ''} ${liked ? 'fill-[#1877F2]' : ''}`}
             />
-            <span className="hidden sm:block">{liked ? 'Liked' : 'Like'}</span>
+            <span>Like</span>
           </button>
           <button
             onClick={() => setCommentsOpen(!commentsOpen)}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted hover:bg-gray-50 hover:text-dark rounded-xl transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-2 text-[14px] font-semibold text-[#65676B] hover:bg-[#F2F2F2] rounded-lg transition-colors"
           >
             <MessageCircle className="h-5 w-5" />
-            <span className="hidden sm:block">Comment</span>
+            <span>Comment</span>
           </button>
           <button
             onClick={() => setShareModalOpen(true)}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted hover:bg-gray-50 hover:text-dark rounded-xl transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-2 text-[14px] font-semibold text-[#65676B] hover:bg-[#F2F2F2] rounded-lg transition-colors"
           >
             <Share2 className="h-5 w-5" />
-            <span className="hidden sm:block">Share</span>
+            <span>Share</span>
           </button>
         </div>
 
         {/* Comments Section */}
         {commentsOpen && (
-          <div className="px-4 pb-4 pt-2 border-t border-gray-50 space-y-3">
+          <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-3">
             {/* Comment Input */}
             <form onSubmit={handleComment} className="flex items-center gap-2">
               <Avatar
@@ -452,12 +459,12 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Write a comment..."
-                  className="w-full bg-background rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 pr-10"
+                  className="w-full bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white rounded-full pl-4 pr-10 py-2 text-[14px] text-[#050505] placeholder-[#65676B] border border-transparent focus:border-gray-300 outline-none transition-all"
                 />
                 {commentText.trim() && (
                   <button
                     type="submit"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-primary"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1877F2] hover:opacity-80 p-1"
                   >
                     <Send className="h-4 w-4" />
                   </button>

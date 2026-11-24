@@ -161,34 +161,34 @@ function StoryCard({ story, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="relative flex-shrink-0 w-24 h-40 rounded-2xl overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-200 shadow-md"
+      className="relative flex-shrink-0 w-28 sm:w-32 h-48 sm:h-52 rounded-xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm border border-gray-200 group"
       style={{ backgroundColor: story.backgroundColor || '#1877F2' }}
     >
       {story.media ? (
         <img
           src={getMediaUrl(story.media)}
           alt="Story"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       ) : (
-        <div className="absolute inset-0 flex items-end justify-center pb-8">
-          <p className="text-white text-xs font-medium text-center px-2 line-clamp-3">{story.text}</p>
+        <div className="absolute inset-0 flex items-center justify-center p-3">
+          <p className="text-white text-xs sm:text-sm font-semibold text-center leading-snug drop-shadow-sm line-clamp-4">
+            {story.text}
+          </p>
         </div>
       )}
-      {/* Avatar */}
-      <div className="absolute top-2 left-2">
+      {/* Facebook Avatar with blue ring */}
+      <div className="absolute top-3 left-3 ring-4 ring-[#1877F2] rounded-full p-0.5 bg-white shadow-md">
         <Avatar
           src={story.author?.avatar}
           name={`${story.author?.firstName || ''} ${story.author?.lastName || ''}`}
           size="sm"
-          ring
-          ringColor="ring-primary"
         />
       </div>
-      {/* Name */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-        <p className="text-white text-xs font-medium text-center truncate">
-          {story.author?.firstName}
+      {/* Author Name */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-2.5 pt-6 text-left">
+        <p className="text-white text-[13px] font-semibold truncate drop-shadow-md">
+          {story.author?.firstName} {story.author?.lastName}
         </p>
       </div>
     </button>
@@ -208,24 +208,39 @@ export default function StoryBar() {
 
   return (
     <>
-      <div className="flex gap-2 overflow-x-auto story-scroll pb-1">
-        {/* Create Story Card */}
-        <button className="relative flex-shrink-0 w-24 h-40 rounded-2xl overflow-hidden bg-white shadow-card hover:shadow-card-hover transition-shadow duration-200 group">
-          <div className="h-2/3 bg-background flex items-center justify-center">
-            <Avatar
-              src={user?.avatar}
-              name={`${user?.firstName || ''} ${user?.lastName || ''}`}
-              size="lg"
-            />
+      <div className="flex gap-2.5 overflow-x-auto story-scroll pb-1.5 scrollbar-none">
+        {/* Facebook Create Story Card */}
+        <button
+          onClick={() => handleViewStory(0)}
+          className="relative flex-shrink-0 w-28 sm:w-32 h-48 sm:h-52 rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200 hover:scale-[1.02] transition-transform duration-200 group flex flex-col"
+        >
+          <div className="h-3/4 w-full bg-gray-100 overflow-hidden relative">
+            {user?.avatar ? (
+              <img
+                src={getMediaUrl(user.avatar)}
+                alt=""
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                <Avatar
+                  src={user?.avatar}
+                  name={`${user?.firstName || ''} ${user?.lastName || ''}`}
+                  size="xl"
+                />
+              </div>
+            )}
           </div>
-          <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-0 mt-[-8px]">
-            <div className="h-7 w-7 rounded-full bg-primary border-2 border-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-              <Plus className="h-4 w-4 text-white" />
+          {/* Blue Plus Button */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-[75%] -translate-y-1/2">
+            <div className="h-9 w-9 rounded-full bg-[#1877F2] border-[3px] border-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+              <Plus className="h-5 w-5 text-white stroke-[3]" />
             </div>
           </div>
-          <div className="h-1/3 flex items-end justify-center pb-2 pt-4">
-            <p className="text-xs font-semibold text-dark text-center leading-tight">
-              Create Story
+          {/* Text */}
+          <div className="h-1/4 w-full flex items-end justify-center pb-2 bg-white">
+            <p className="text-[13px] font-semibold text-[#050505] text-center">
+              Create story
             </p>
           </div>
         </button>

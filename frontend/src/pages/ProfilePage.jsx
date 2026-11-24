@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import Avatar from '../components/ui/Avatar';
 import Button from '../components/ui/Button';
 import PostCard from '../components/PostCard';
+import CreatePost from '../components/CreatePost';
 import Loader from '../components/ui/Loader';
 import { useAuth } from '../hooks/useAuth';
 import { userAPI, postAPI } from '../utils/api';
@@ -11,18 +12,22 @@ import { getMediaUrl, formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import {
   MapPin, Globe, Calendar, Edit3, UserPlus, UserCheck,
-  UserX, MessageSquare, ShieldCheck
+  UserX, Camera, Plus, MoreHorizontal, Image as ImageIcon,
+  ShieldCheck, Briefcase, Home as HomeIcon,
 } from 'lucide-react';
 
 export default function ProfilePage() {
   const { username } = useParams();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, updateUser } = useAuth();
   const [profileUser, setProfileUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('posts');
-  const [friendStatus, setFriendStatus] = useState('none'); // 'none', 'friends', 'sent', 'received'
+  const [friendStatus, setFriendStatus] = useState('none');
   const [actionLoading, setActionLoading] = useState(false);
+
+  const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
 
   const isOwnProfile = currentUser?.username === username;
 
@@ -33,7 +38,6 @@ export default function ProfilePage() {
       const userData = userRes.data?.data?.user || userRes.data?.user;
       setProfileUser(userData);
 
-      // Determine friendship status
       if (userData && currentUser) {
         if (userData.friends?.some((f) => (f._id || f) === currentUser._id)) {
           setFriendStatus('friends');
@@ -44,7 +48,6 @@ export default function ProfilePage() {
         }
       }
 
-      // Fetch user's posts
       if (userData?._id) {
         const postRes = await postAPI.getUserPosts(userData._id);
         setPosts(postRes.data?.data?.posts || postRes.data?.posts || []);
@@ -60,6 +63,53 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchProfileData();
   }, [username]);
+
+  const handleDirectAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Instant local preview
+    const localUrl = URL.createObjectURL(file);
+    setProfileUser((prev) => ({ ...prev, avatar: localUrl }));
+
+    const data = new FormData();
+    data.append('avatar', file);
+
+    try {
+      toast.loading('Uploading profile picture...', { id: 'avatar-up' });
+      const res = await userAPI.uploadAvatar(data);
+      const updated = res.data?.data?.user || res.data?.user;
+      const avatarUrl = res.data?.data?.avatar || res.data?.avatar || localUrl;
+      if (updated && updateUser) updateUser(updated);
+      setProfileUser((prev) => ({ ...prev, avatar: avatarUrl }));
+      toast.success('Profile picture updated!', { id: 'avatar-up' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload picture', { id: 'avatar-up' });
+    }
+  };
+
+  const handleDirectCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const localUrl = URL.createObjectURL(file);
+    setProfileUser((prev) => ({ ...prev, coverPhoto: localUrl }));
+
+    const data = new FormData();
+    data.append('cover', file);
+
+    try {
+      toast.loading('Uploading cover photo...', { id: 'cover-up' });
+      const res = await userAPI.uploadCover(data);
+      const updated = res.data?.data?.user || res.data?.user;
+      const coverUrl = res.data?.data?.coverPhoto || res.data?.coverPhoto || localUrl;
+      if (updated && updateUser) updateUser(updated);
+      setProfileUser((prev) => ({ ...prev, coverPhoto: coverUrl }));
+      toast.success('Cover photo updated!', { id: 'cover-up' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload cover photo', { id: 'cover-up' });
+    }
+  };
 
   const handleFriendAction = async () => {
     if (!profileUser?._id) return;
@@ -84,6 +134,15 @@ export default function ProfilePage() {
       setActionLoading(false);
     }
   };
+
+  const handlePostCreated = (newPost) => {
+    setPosts((prev) => [newPost, ...prev]);
+  };
+
+  // Collect photos from posts
+  const postPhotos = posts
+    .flatMap((p) => (p.media || []).filter((m) => m.type === 'image' || !m.type).map((m) => getMediaUrl(m.url || m)))
+    .slice(0, 9);
 
   if (loading) {
     return (
@@ -111,40 +170,113 @@ export default function ProfilePage() {
 
   return (
     <MainLayout hideSidebars>
-      <div className="space-y-4">
-        {/* Profile Header Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="max-w-6xl mx-auto space-y-4">
+        {/* Facebook Profile Header Card */}
+        <div className="bg-white rounded-b-2xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Cover Photo */}
-          <div className="h-48 sm:h-64 w-full bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 relative">
-            {profileUser.coverPhoto && (
+          <div className="h-56 sm:h-80 md:h-96 w-full bg-gradient-to-b from-gray-300 to-gray-400 relative group">
+            {profileUser.coverPhoto ? (
               <img
                 src={getMediaUrl(profileUser.coverPhoto)}
                 alt="Cover"
                 className="w-full h-full object-cover"
               />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-[#1877F2]/30 via-indigo-200 to-purple-200" />
+            )}
+
+            {isOwnProfile && (
+              <>
+                <button
+                  onClick={() => coverInputRef.current?.click()}
+                  className="absolute bottom-4 right-4 bg-white/95 hover:bg-white text-[#050505] text-[14px] font-semibold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all hover:scale-[1.02]"
+                >
+                  <Camera className="w-4 h-4 text-[#050505]" />
+                  <span>Edit cover photo</span>
+                </button>
+                <input
+                  type="file"
+                  ref={coverInputRef}
+                  onChange={handleDirectCoverUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </>
             )}
           </div>
 
-          {/* Profile Meta Area */}
-          <div className="px-6 pb-6 relative">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between -mt-16 sm:-mt-20 gap-4 mb-4">
-              <div className="relative inline-block">
-                <Avatar
-                  src={profileUser.avatar}
-                  name={profileUser.fullName || profileUser.username}
-                  size="2xl"
-                  className="ring-4 ring-white shadow-md"
-                />
+          {/* Profile Details & Action Bar */}
+          <div className="px-6 pb-4 pt-2">
+            <div className="flex flex-col md:flex-row items-center md:items-end justify-between -mt-20 md:-mt-24 gap-4 pb-4 border-b border-gray-200">
+              <div className="flex flex-col md:flex-row items-center md:items-end gap-5 text-center md:text-left">
+                {/* Profile Picture with Camera Overlay */}
+                <div className="relative inline-block">
+                  <Avatar
+                    src={profileUser.avatar}
+                    name={profileUser.fullName || profileUser.username}
+                    size="2xl"
+                    className="ring-4 ring-white shadow-xl !w-40 !h-40"
+                  />
+                  {isOwnProfile && (
+                    <>
+                      <button
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] flex items-center justify-center text-[#050505] shadow-md border-2 border-white transition-all hover:scale-105"
+                        title="Update profile picture"
+                      >
+                        <Camera className="w-5 h-5" />
+                      </button>
+                      <input
+                        type="file"
+                        ref={avatarInputRef}
+                        onChange={handleDirectAvatarUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    </>
+                  )}
+                </div>
+
+                {/* Name, Friend Count & Bio */}
+                <div>
+                  <div className="flex items-center justify-center md:justify-start gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-[#050505]">
+                      {profileUser.firstName} {profileUser.lastName}
+                    </h1>
+                    {profileUser.isVerified && (
+                      <ShieldCheck className="w-6 h-6 text-[#1877F2] fill-[#1877F2]/10" />
+                    )}
+                  </div>
+                  <p className="text-[15px] font-medium text-[#65676B] mt-0.5">
+                    {profileUser.friends?.length || 0} friends
+                  </p>
+                  {profileUser.bio && (
+                    <p className="text-[14px] text-[#050505] mt-1 max-w-xl">
+                      {profileUser.bio}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2">
+              {/* Action Buttons (Facebook exact buttons) */}
+              <div className="flex items-center gap-2.5 flex-wrap justify-center">
                 {isOwnProfile ? (
-                  <Link to="/profile/edit">
-                    <Button variant="outline" size="sm" icon={Edit3}>
-                      Edit Profile
-                    </Button>
-                  </Link>
+                  <>
+                    <button
+                      onClick={() => toast.success('Story creator opened!')}
+                      className="px-4 py-2 rounded-lg bg-[#1877F2] hover:bg-[#166FE5] text-white font-semibold text-[15px] flex items-center gap-2 transition-colors shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add to story</span>
+                    </button>
+                    <Link
+                      to="/profile/edit"
+                      className="px-4 py-2 rounded-lg bg-[#E4E6EB] hover:bg-[#D8DADF] text-[#050505] font-semibold text-[15px] flex items-center gap-2 transition-colors"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span>Edit profile</span>
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Button
@@ -171,132 +303,213 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Name & Bio */}
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {profileUser.firstName} {profileUser.lastName}
-                </h1>
-                {profileUser.isVerified && (
-                  <ShieldCheck className="w-5 h-5 text-blue-500" />
-                )}
-              </div>
-              <p className="text-sm text-gray-500">@{profileUser.username}</p>
+            {/* Navigation Tabs (Posts, About, Friends, Photos) */}
+            <div className="flex items-center gap-1 mt-1 overflow-x-auto">
+              {['posts', 'about', 'friends', 'photos'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`
+                    py-3 px-4 font-semibold text-[15px] capitalize rounded-lg transition-colors relative
+                    ${activeTab === tab
+                      ? 'text-[#1877F2]'
+                      : 'text-[#65676B] hover:bg-[#F2F2F2]'
+                    }
+                  `}
+                >
+                  {tab}
+                  {activeTab === tab && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#1877F2] rounded-t-md" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
+        {/* Facebook 2-Column Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Left Column: Intro, Photos, Friends (5 cols on lg) */}
+          <div className="lg:col-span-5 space-y-4">
+            {/* Intro Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
+              <h2 className="text-[17px] font-bold text-[#050505]">Intro</h2>
               {profileUser.bio && (
-                <p className="mt-3 text-sm text-gray-700 leading-relaxed max-w-2xl">
+                <p className="text-[14px] text-center text-[#050505] leading-relaxed pb-3 border-b border-gray-100">
                   {profileUser.bio}
                 </p>
               )}
 
-              {/* Location, Website, Joined */}
-              <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-gray-500">
+              <div className="space-y-3 text-[14px] text-[#050505]">
                 {profileUser.location && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-gray-400" />
-                    <span>{profileUser.location}</span>
+                  <div className="flex items-center gap-3 text-[#65676B]">
+                    <HomeIcon className="w-5 h-5 text-[#8C939D] flex-shrink-0" />
+                    <span>Lives in <strong className="text-[#050505]">{profileUser.location}</strong></span>
                   </div>
                 )}
                 {profileUser.website && (
-                  <div className="flex items-center gap-1.5">
-                    <Globe className="w-4 h-4 text-gray-400" />
+                  <div className="flex items-center gap-3 text-[#65676B]">
+                    <Globe className="w-5 h-5 text-[#8C939D] flex-shrink-0" />
                     <a
                       href={profileUser.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary hover:underline"
+                      className="text-[#1877F2] hover:underline truncate"
                     >
                       {profileUser.website.replace(/^https?:\/\//, '')}
                     </a>
                   </div>
                 )}
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-gray-400" />
+                <div className="flex items-center gap-3 text-[#65676B]">
+                  <Calendar className="w-5 h-5 text-[#8C939D] flex-shrink-0" />
                   <span>Joined {formatDate(profileUser.createdAt)}</span>
                 </div>
               </div>
 
-              {/* Counts */}
-              <div className="flex gap-6 mt-4 pt-4 border-t border-gray-100 text-sm">
-                <div>
-                  <span className="font-bold text-gray-900">{posts.length}</span>{' '}
-                  <span className="text-gray-500">Posts</span>
+              {isOwnProfile && (
+                <Link
+                  to="/profile/edit"
+                  className="w-full mt-2 py-2 rounded-lg bg-[#E4E6EB] hover:bg-[#D8DADF] text-[#050505] font-semibold text-[14px] flex items-center justify-center transition-colors"
+                >
+                  Edit details
+                </Link>
+              )}
+            </div>
+
+            {/* Photos Preview Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[17px] font-bold text-[#050505]">Photos</h2>
+                <button onClick={() => setActiveTab('photos')} className="text-[14px] text-[#1877F2] hover:underline font-medium">
+                  See all photos
+                </button>
+              </div>
+              {postPhotos.length === 0 ? (
+                <p className="text-xs text-[#65676B] py-4 text-center">No photos uploaded yet</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-1.5 rounded-lg overflow-hidden">
+                  {postPhotos.map((photo, i) => (
+                    <img key={i} src={photo} alt="" className="w-full h-24 sm:h-28 object-cover hover:opacity-90 transition-opacity" />
+                  ))}
                 </div>
-                <div>
-                  <span className="font-bold text-gray-900">
-                    {profileUser.friends?.length || 0}
-                  </span>{' '}
-                  <span className="text-gray-500">Friends</span>
-                </div>
-                <div>
-                  <span className="font-bold text-gray-900">
-                    {profileUser.followers?.length || 0}
-                  </span>{' '}
-                  <span className="text-gray-500">Followers</span>
-                </div>
+              )}
+            </div>
+
+            {/* Friends Preview Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-[17px] font-bold text-[#050505]">Friends</h2>
+                <Link to="/friends" className="text-[14px] text-[#1877F2] hover:underline font-medium">
+                  See all friends
+                </Link>
+              </div>
+              <p className="text-xs text-[#65676B] mb-3">{profileUser.friends?.length || 0} friends</p>
+              <div className="grid grid-cols-3 gap-3">
+                {(profileUser.friends || []).slice(0, 6).map((friend) => (
+                  <Link key={friend._id || friend} to={`/profile/${friend.username}`} className="group block">
+                    <Avatar
+                      src={friend.avatar}
+                      name={`${friend.firstName || ''} ${friend.lastName || ''}`}
+                      size="xl"
+                      className="w-full aspect-square !rounded-lg"
+                    />
+                    <p className="text-xs font-semibold text-[#050505] mt-1 truncate group-hover:underline">
+                      {friend.firstName} {friend.lastName}
+                    </p>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex border-t border-gray-100 px-6">
-            <button
-              onClick={() => setActiveTab('posts')}
-              className={`py-3 px-4 font-semibold text-sm border-b-2 transition-colors ${
-                activeTab === 'posts'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Posts
-            </button>
-            <button
-              onClick={() => setActiveTab('about')}
-              className={`py-3 px-4 font-semibold text-sm border-b-2 transition-colors ${
-                activeTab === 'about'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              About
-            </button>
-          </div>
-        </div>
+          {/* Right Column: Create Post & Posts Feed (7 cols on lg) */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Create Post on Own Profile */}
+            {isOwnProfile && activeTab === 'posts' && (
+              <CreatePost onPostCreated={handlePostCreated} />
+            )}
 
-        {/* Tab Content */}
-        {activeTab === 'posts' && (
-          <div className="space-y-4">
-            {posts.length === 0 ? (
-              <div className="bg-white rounded-xl p-8 text-center border border-gray-100 shadow-sm">
-                <p className="text-gray-500 text-sm">No posts shared yet.</p>
+            {/* Tab: Posts */}
+            {activeTab === 'posts' && (
+              <div className="space-y-4">
+                {posts.length === 0 ? (
+                  <div className="bg-white rounded-xl p-8 text-center border border-gray-200 shadow-sm">
+                    <p className="text-[#65676B] text-[15px] font-medium">No posts shared yet.</p>
+                  </div>
+                ) : (
+                  posts.map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={post}
+                      onDelete={(id) => setPosts(posts.filter((p) => p._id !== id))}
+                      onUpdate={(up) => setPosts(posts.map((p) => (p._id === up._id ? up : p)))}
+                    />
+                  ))
+                )}
               </div>
-            ) : (
-              posts.map((post) => (
-                <PostCard
-                  key={post._id}
-                  post={post}
-                  onDelete={(id) => setPosts(posts.filter((p) => p._id !== id))}
-                  onUpdate={(up) => setPosts(posts.map((p) => (p._id === up._id ? up : p)))}
-                />
-              ))
+            )}
+
+            {/* Tab: About */}
+            {activeTab === 'about' && (
+              <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm space-y-4">
+                <h3 className="font-bold text-[#050505] text-lg">About {profileUser.firstName}</h3>
+                <p className="text-[15px] text-[#050505] leading-relaxed">
+                  {profileUser.bio || 'No bio written yet.'}
+                </p>
+                <div className="pt-4 border-t border-gray-100 space-y-3 text-[14px] text-[#050505]">
+                  <p><strong>Username:</strong> @{profileUser.username}</p>
+                  {profileUser.location && <p><strong>Lives in:</strong> {profileUser.location}</p>}
+                  {profileUser.website && <p><strong>Website:</strong> {profileUser.website}</p>}
+                  <p><strong>Member since:</strong> {formatDate(profileUser.createdAt)}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Friends */}
+            {activeTab === 'friends' && (
+              <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <h3 className="font-bold text-[#050505] text-lg mb-4">Friends ({profileUser.friends?.length || 0})</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {(profileUser.friends || []).map((friend) => (
+                    <Link
+                      key={friend._id || friend}
+                      to={`/profile/${friend.username}`}
+                      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors"
+                    >
+                      <Avatar
+                        src={friend.avatar}
+                        name={`${friend.firstName || ''} ${friend.lastName || ''}`}
+                        size="lg"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-[#050505] truncate hover:underline">
+                          {friend.firstName} {friend.lastName}
+                        </p>
+                        <p className="text-xs text-[#65676B]">@{friend.username}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Photos */}
+            {activeTab === 'photos' && (
+              <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <h3 className="font-bold text-[#050505] text-lg mb-4">Photos</h3>
+                {postPhotos.length === 0 ? (
+                  <p className="text-[#65676B] text-center py-6">No photos found.</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {postPhotos.map((photo, i) => (
+                      <img key={i} src={photo} alt="" className="w-full h-40 object-cover rounded-lg" />
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
-        )}
-
-        {activeTab === 'about' && (
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-4">
-            <h3 className="font-bold text-gray-900">About {profileUser.firstName}</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              {profileUser.bio || 'No bio written yet.'}
-            </p>
-            <div className="pt-4 border-t border-gray-100 space-y-2 text-sm text-gray-600">
-              <p><strong>Username:</strong> @{profileUser.username}</p>
-              {profileUser.location && <p><strong>Lives in:</strong> {profileUser.location}</p>}
-              {profileUser.website && <p><strong>Website:</strong> {profileUser.website}</p>}
-              <p><strong>Member since:</strong> {formatDate(profileUser.createdAt)}</p>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </MainLayout>
   );

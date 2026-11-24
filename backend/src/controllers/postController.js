@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { extractHashtags } = require('../utils/helpers');
 const path = require('path');
+const fs = require('fs');
 
 // Fields to populate for post author
 const AUTHOR_FIELDS = '_id username firstName lastName fullName avatar isVerified';
@@ -34,8 +35,23 @@ const createPost = async (req, res, next) => {
       for (const file of req.files) {
         const isVideo = file.mimetype.startsWith('video/');
         const subDir = isVideo ? 'videos' : 'images';
+        let mediaUrl = `/uploads/${subDir}/${file.filename}`;
+
+        // Convert image files to persistent base64 data URLs to survive Render restarts
+        try {
+          if (fs.existsSync(file.path)) {
+            const fileBuffer = fs.readFileSync(file.path);
+            mediaUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+            try {
+              fs.unlinkSync(file.path);
+            } catch (_) {}
+          }
+        } catch (mediaErr) {
+          console.error('Error converting media to base64:', mediaErr);
+        }
+
         media.push({
-          url: `/uploads/${subDir}/${file.filename}`,
+          url: mediaUrl,
           type: isVideo ? 'video' : 'image',
           thumbnail: null,
         });

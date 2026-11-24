@@ -1,117 +1,83 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, UserPlus, Hash } from 'lucide-react';
+import { Search, MoreHorizontal, Video } from 'lucide-react';
 import Avatar from '../ui/Avatar';
-import Button from '../ui/Button';
-import { searchAPI, userAPI } from '../../utils/api';
 
-// Mock suggested users data
-const mockSuggested = [
-  { _id: '1', firstName: 'Emma', lastName: 'Wilson', username: 'emmaw', mutualFriends: 5 },
-  { _id: '2', firstName: 'James', lastName: 'Brown', username: 'jbrown', mutualFriends: 2 },
-  { _id: '3', firstName: 'Sofia', lastName: 'Lee', username: 'sofialee', mutualFriends: 8 },
-];
-
-const mockTrending = [
-  { tag: '#technology', posts: 1240 },
-  { tag: '#programming', posts: 892 },
-  { tag: '#webdev', posts: 654 },
-  { tag: '#design', posts: 441 },
-  { tag: '#opensource', posts: 320 },
+const mockContacts = [
+  { _id: '1', firstName: 'Emma', lastName: 'Wilson', username: 'emmaw', online: true },
+  { _id: '2', firstName: 'James', lastName: 'Brown', username: 'jbrown', online: true },
+  { _id: '3', firstName: 'Sofia', lastName: 'Lee', username: 'sofialee', online: true },
+  { _id: '4', firstName: 'Alice', lastName: 'Johnson', username: 'alicej', online: false },
+  { _id: '5', firstName: 'Bob', lastName: 'Smith', username: 'bobsmith', online: true },
 ];
 
 export default function RightSidebar() {
-  const [suggested, setSuggested] = useState(mockSuggested);
-  const [trending, setTrending] = useState(mockTrending);
-  const [addedFriends, setAddedFriends] = useState(new Set());
-
-  const handleAddFriend = async (userId) => {
-    try {
-      await userAPI.sendFriendRequest(userId);
-      setAddedFriends((prev) => new Set([...prev, userId]));
-    } catch {
-      // For demo, just toggle local state
-      setAddedFriends((prev) => new Set([...prev, userId]));
-    }
-  };
+  const [contacts] = useState(mockContacts);
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 xl:w-72 flex-shrink-0">
-      <div className="sticky top-20 space-y-4">
-        {/* People You May Know */}
-        <div className="bg-white rounded-2xl shadow-card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-dark text-sm">People You May Know</h3>
-            <Link to="/friends" className="text-xs text-primary hover:underline font-medium">
-              See All
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {suggested.map((person) => (
-              <div key={person._id} className="flex items-center gap-3">
-                <Avatar
-                  name={`${person.firstName} ${person.lastName}`}
-                  src={person.avatar}
-                  size="sm"
-                />
-                <div className="flex-1 min-w-0">
-                  <Link
-                    to={`/profile/${person.username}`}
-                    className="text-sm font-medium text-dark truncate block hover:text-primary transition-colors"
-                  >
-                    {person.firstName} {person.lastName}
-                  </Link>
-                  <p className="text-xs text-muted">{person.mutualFriends} mutual friends</p>
-                </div>
-                <button
-                  onClick={() => handleAddFriend(person._id)}
-                  className={`flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg transition-colors ${
-                    addedFriends.has(person._id)
-                      ? 'bg-gray-100 text-muted'
-                      : 'bg-primary-50 text-primary hover:bg-primary hover:text-white'
-                  }`}
-                >
-                  {addedFriends.has(person._id) ? 'Sent' : 'Add'}
-                </button>
-              </div>
-            ))}
-          </div>
+    <aside className="hidden lg:flex flex-col w-64 xl:w-72 flex-shrink-0 pl-2">
+      <div className="sticky top-16 space-y-4">
+        {/* Sponsored / SocialWave Link */}
+        <div className="pb-3 border-b border-gray-300/70">
+          <h3 className="font-bold text-[#65676B] text-[15px] mb-2">Sponsored</h3>
+          <a
+            href="https://github.com/Shovon5489/socialwave-app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#E4E6EB] transition-colors group"
+          >
+            <div className="w-24 h-16 rounded-lg bg-gradient-to-tr from-[#1877F2] to-blue-700 flex items-center justify-center text-white font-bold text-xs p-2 text-center shadow-sm">
+              SocialWave Facebook
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-[13px] text-[#050505] truncate group-hover:underline">
+                SocialWave App
+              </p>
+              <p className="text-[11px] text-[#65676B] truncate">github.com</p>
+            </div>
+          </a>
         </div>
 
-        {/* Trending Hashtags */}
-        <div className="bg-white rounded-2xl shadow-card p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-dark text-sm">Trending</h3>
+        {/* Facebook Contacts Header */}
+        <div>
+          <div className="flex items-center justify-between px-1 mb-2">
+            <h3 className="font-bold text-[#65676B] text-[15px]">Contacts</h3>
+            <div className="flex items-center gap-1 text-[#65676B]">
+              <button className="p-1.5 rounded-full hover:bg-[#E4E6EB] transition-colors" title="New Call">
+                <Video className="w-4 h-4" />
+              </button>
+              <button className="p-1.5 rounded-full hover:bg-[#E4E6EB] transition-colors" title="Search Contacts">
+                <Search className="w-4 h-4" />
+              </button>
+              <button className="p-1.5 rounded-full hover:bg-[#E4E6EB] transition-colors" title="Options">
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <div className="space-y-2">
-            {trending.map(({ tag, posts }, index) => (
+
+          {/* Active Contacts List */}
+          <div className="space-y-0.5">
+            {contacts.map((contact) => (
               <Link
-                key={tag}
-                to={`/search?q=${encodeURIComponent(tag)}`}
-                className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-colors group"
+                key={contact._id}
+                to={`/profile/${contact.username}`}
+                className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-[#E4E6EB] transition-colors group"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted font-medium w-4">{index + 1}</span>
-                  <div>
-                    <p className="text-sm font-medium text-dark group-hover:text-primary transition-colors">
-                      {tag}
-                    </p>
-                    <p className="text-xs text-muted">{posts.toLocaleString()} posts</p>
-                  </div>
+                <div className="relative">
+                  <Avatar
+                    name={`${contact.firstName} ${contact.lastName}`}
+                    size="sm"
+                  />
+                  {contact.online && (
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#31A24C] border-2 border-white" />
+                  )}
                 </div>
-                <Hash className="h-3.5 w-3.5 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                <p className="text-[14px] font-semibold text-[#050505] truncate">
+                  {contact.firstName} {contact.lastName}
+                </p>
               </Link>
             ))}
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-2">
-          <p className="text-xs text-muted leading-relaxed">
-            Privacy · Terms · Advertising · Cookies ·{' '}
-            <span className="font-medium">SocialWave © 2024</span>
-          </p>
         </div>
       </div>
     </aside>

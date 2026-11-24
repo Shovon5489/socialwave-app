@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const path = require('path');
+const fs = require('fs');
 
 // Fields to populate when returning user objects
 const USER_BASIC_FIELDS = '_id username firstName lastName fullName avatar coverPhoto isVerified role';
@@ -76,18 +77,26 @@ const uploadAvatar = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    const relativePath = `/uploads/images/${req.file.filename}`;
+    // Convert to persistent base64 data URL so it never disappears across Render restarts
+    let avatarUrl = `/uploads/images/${req.file.filename}`;
+    try {
+      if (fs.existsSync(req.file.path)) {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        avatarUrl = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(req.file.path);
+      }
+    } catch (_) {}
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { avatar: relativePath },
+      { avatar: avatarUrl },
       { new: true }
     ).select('-password');
 
     return res.status(200).json({
       success: true,
       message: 'Avatar uploaded successfully',
-      data: { avatar: relativePath, user },
+      data: { avatar: avatarUrl, user },
     });
   } catch (error) {
     next(error);
@@ -104,18 +113,26 @@ const uploadCover = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    const relativePath = `/uploads/images/${req.file.filename}`;
+    // Convert to persistent base64 data URL so it never disappears across Render restarts
+    let coverUrl = `/uploads/images/${req.file.filename}`;
+    try {
+      if (fs.existsSync(req.file.path)) {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        coverUrl = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        fs.unlinkSync(req.file.path);
+      }
+    } catch (_) {}
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { coverPhoto: relativePath },
+      { coverPhoto: coverUrl },
       { new: true }
     ).select('-password');
 
     return res.status(200).json({
       success: true,
       message: 'Cover photo uploaded successfully',
-      data: { coverPhoto: relativePath, user },
+      data: { coverPhoto: coverUrl, user },
     });
   } catch (error) {
     next(error);

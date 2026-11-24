@@ -97,44 +97,19 @@ export default function EditProfilePage() {
         </div>
 
         {/* Photos section */}
-        <div className="space-y-4 mb-8">
-          <label className="block text-sm font-semibold text-gray-700">Profile Media</label>
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <div className="relative">
-              <Avatar
-                src={avatarPreview || user?.avatar}
-                name={user?.fullName || user?.username}
-                size="xl"
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-2.5">
-              <Button
+        <div className="space-y-6 mb-8 pb-6 border-b border-gray-200">
+          {/* Cover Photo Section */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[15px] font-bold text-[#050505]">Cover Photo</label>
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
-                icon={Camera}
-                onClick={() => avatarInputRef.current?.click()}
-              >
-                Change Profile Photo
-              </Button>
-              <input
-                type="file"
-                ref={avatarInputRef}
-                onChange={handleAvatarChange}
-                accept="image/*"
-                className="hidden"
-              />
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                icon={ImageIcon}
                 onClick={() => coverInputRef.current?.click()}
+                className="text-[14px] font-semibold text-[#1877F2] hover:bg-[#EBF3FE] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
               >
-                Change Cover Photo
-              </Button>
+                <ImageIcon className="w-4 h-4" />
+                <span>Upload Cover</span>
+              </button>
               <input
                 type="file"
                 ref={coverInputRef}
@@ -142,6 +117,66 @@ export default function EditProfilePage() {
                 accept="image/*"
                 className="hidden"
               />
+            </div>
+            <div className="h-44 sm:h-52 w-full rounded-xl bg-gray-100 overflow-hidden relative border border-gray-200">
+              {coverPreview || user?.coverPhoto ? (
+                <img
+                  src={coverPreview || user?.coverPhoto}
+                  alt="Cover preview"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-2">
+                  <ImageIcon className="w-8 h-8" />
+                  <span className="text-sm">No cover photo set</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Profile Picture Section */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[15px] font-bold text-[#050505]">Profile Picture</label>
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                className="text-[14px] font-semibold text-[#1877F2] hover:bg-[#EBF3FE] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Camera className="w-4 h-4" />
+                <span>Upload Photo</span>
+              </button>
+              <input
+                type="file"
+                ref={avatarInputRef}
+                onChange={handleAvatarChange}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-200">
+              <div className="relative">
+                <Avatar
+                  src={avatarPreview || user?.avatar}
+                  name={user?.fullName || user?.username}
+                  size="xl"
+                  className="ring-2 ring-white shadow-md !w-20 !h-20"
+                />
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] border-2 border-white shadow text-[#050505]"
+                  title="Upload profile photo"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+              </div>
+              <div>
+                <p className="font-bold text-[#050505] text-[15px]">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-xs text-[#65676B]">JPG, PNG or GIF up to 10MB</p>
+              </div>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Users, Bell, Bookmark, Search, LogOut, User, Settings,
-  ChevronDown, Menu, X,
+  ChevronDown, Menu, X, MessageCircle, Grid, Play,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../ui/Avatar';
@@ -14,7 +14,7 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [unreadCount] = useState(3); // TODO: connect to real notification count
+  const [unreadCount] = useState(3);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -38,128 +38,185 @@ export default function Navbar() {
   const navLinks = [
     { to: '/feed', icon: Home, label: 'Home' },
     { to: '/friends', icon: Users, label: 'Friends' },
-    { to: '/notifications', icon: Bell, label: 'Notifications', badge: unreadCount },
     { to: '/saved', icon: Bookmark, label: 'Saved' },
+    { to: '/notifications', icon: Bell, label: 'Notifications', badge: unreadCount },
   ];
 
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center h-14 gap-2">
-          {/* Logo */}
-          <Link to="/feed" className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-2xl">🌊</span>
-            <span className="font-bold text-xl text-primary hidden sm:block">SocialWave</span>
-          </Link>
+    <nav className="fixed top-0 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-200 h-14">
+      <div className="max-w-[1920px] mx-auto px-4 h-full">
+        <div className="flex items-center justify-between h-full">
+          {/* Left: Facebook Logo & Search */}
+          <div className="flex items-center gap-2.5 flex-shrink-0">
+            <Link to="/feed" className="flex items-center gap-2 group" title="SocialWave Facebook">
+              <div className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white font-black text-2xl tracking-tighter select-none shadow-sm hover:opacity-95 transition-opacity">
+                f
+              </div>
+              <span className="font-bold text-xl text-[#1877F2] hidden xl:inline tracking-tight">facebook</span>
+            </Link>
 
-          {/* Search (desktop) */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xs ml-2">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search SocialWave..."
-                className="w-full pl-9 pr-4 py-2 bg-background rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-              />
-            </div>
-          </form>
+            {/* Facebook Style Search Input */}
+            <form onSubmit={handleSearch} className="hidden md:flex items-center">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#65676B]" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search Facebook"
+                  className="pl-9 pr-4 py-2 bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white border border-transparent focus:border-gray-300 rounded-full text-sm text-[#050505] placeholder-[#65676B] outline-none transition-all w-56 lg:w-64"
+                />
+              </div>
+            </form>
+          </div>
 
-          {/* Center Nav Icons (desktop) */}
-          <div className="hidden md:flex flex-1 items-center justify-center gap-1">
+          {/* Center: Facebook 4-5 Navigation Tabs */}
+          <div className="hidden md:flex items-center h-full gap-1">
             {navLinks.map(({ to, icon: Icon, label, badge }) => (
               <Link
                 key={to}
                 to={to}
                 title={label}
                 className={`
-                  relative flex items-center justify-center h-10 w-14 rounded-xl transition-all duration-200
+                  relative flex items-center justify-center h-full px-8 lg:px-11 transition-colors
                   ${isActive(to)
-                    ? 'text-primary bg-primary-50'
-                    : 'text-muted hover:text-dark hover:bg-gray-100'
+                    ? 'text-[#1877F2] border-b-[3px] border-[#1877F2]'
+                    : 'text-[#65676B] hover:bg-[#F2F2F2] rounded-lg my-1 h-12'
                   }
                 `}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className={`h-6 w-6 ${isActive(to) ? 'stroke-[2.5]' : ''}`} />
                 {badge > 0 && (
-                  <span className="absolute top-0.5 right-1 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+                  <span className="absolute top-2 right-6 h-4 min-w-4 px-1 rounded-full bg-[#E41E3F] text-white text-[11px] font-bold flex items-center justify-center ring-2 ring-white">
                     {badge > 9 ? '9+' : badge}
                   </span>
-                )}
-                {isActive(to) && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-8 bg-primary rounded-full" />
                 )}
               </Link>
             ))}
           </div>
 
-          {/* Right: User Dropdown */}
-          <div className="flex items-center gap-2 ml-auto">
-            {/* Mobile search */}
+          {/* Right: Round Action Buttons & Profile */}
+          <div className="flex items-center gap-2">
+            {/* Mobile search button */}
             <button
-              className="md:hidden p-2 rounded-full text-muted hover:bg-gray-100"
+              className="md:hidden w-10 h-10 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] flex items-center justify-center text-[#050505] transition-colors"
               onClick={() => navigate('/search')}
+              title="Search"
             >
               <Search className="h-5 w-5" />
             </button>
 
-            {/* Avatar Dropdown */}
+            {/* Menu (9 dots) */}
+            <button
+              onClick={() => navigate('/feed')}
+              className="hidden sm:flex w-10 h-10 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] items-center justify-center text-[#050505] transition-colors"
+              title="Menu"
+            >
+              <Grid className="h-5 w-5" />
+            </button>
+
+            {/* Messenger button */}
+            <button
+              onClick={() => navigate('/notifications')}
+              className="hidden sm:flex w-10 h-10 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] items-center justify-center text-[#050505] transition-colors"
+              title="Messenger"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </button>
+
+            {/* Notification Bell */}
+            <Link
+              to="/notifications"
+              className="relative w-10 h-10 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] flex items-center justify-center text-[#050505] transition-colors"
+              title="Notifications"
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-[#E41E3F] text-white text-xs font-bold flex items-center justify-center ring-2 ring-white">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Profile Avatar Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="flex items-center rounded-full hover:ring-2 hover:ring-[#1877F2]/40 transition-all p-0.5"
+                title="Account Controls and Settings"
               >
                 <Avatar
                   src={user?.avatar}
                   name={`${user?.firstName || ''} ${user?.lastName || ''}`}
-                  size="sm"
+                  size="md"
                 />
-                <ChevronDown className={`h-4 w-4 text-muted hidden sm:block transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-1 animate-fade-in z-50">
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="font-semibold text-dark text-sm">
-                      {user?.firstName} {user?.lastName}
-                    </p>
-                    <p className="text-xs text-muted">@{user?.username}</p>
-                  </div>
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 p-2 animate-fade-in z-50">
+                  {/* User Profile Card */}
                   <Link
                     to={`/profile/${user?.username}`}
                     onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-dark hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#F2F2F2] transition-colors shadow-sm border border-gray-100"
                   >
-                    <User className="h-4 w-4 text-muted" />
-                    Your Profile
+                    <Avatar
+                      src={user?.avatar}
+                      name={`${user?.firstName || ''} ${user?.lastName || ''}`}
+                      size="lg"
+                    />
+                    <div className="min-w-0">
+                      <p className="font-bold text-[#050505] text-base truncate">
+                        {user?.firstName} {user?.lastName}
+                      </p>
+                      <p className="text-xs text-[#65676B] truncate">See your profile</p>
+                    </div>
                   </Link>
+
+                  <div className="my-2 border-t border-gray-200" />
+
                   <Link
                     to="/profile/edit"
                     onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-dark hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#050505] hover:bg-[#F2F2F2] transition-colors"
                   >
-                    <Settings className="h-4 w-4 text-muted" />
-                    Edit Profile
+                    <div className="w-9 h-9 rounded-full bg-[#E4E6EB] flex items-center justify-center">
+                      <Settings className="h-5 w-5 text-[#050505]" />
+                    </div>
+                    <span>Settings & privacy</span>
                   </Link>
-                  <div className="border-t border-gray-100 mt-1">
-                    <button
-                      onClick={() => { setDropdownOpen(false); logout(); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Log Out
-                    </button>
-                  </div>
+
+                  <Link
+                    to="/saved"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#050505] hover:bg-[#F2F2F2] transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#E4E6EB] flex items-center justify-center">
+                      <Bookmark className="h-5 w-5 text-[#050505]" />
+                    </div>
+                    <span>Saved items</span>
+                  </Link>
+
+                  <div className="my-2 border-t border-gray-200" />
+
+                  <button
+                    onClick={() => { setDropdownOpen(false); logout(); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#050505] hover:bg-[#F2F2F2] transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#E4E6EB] flex items-center justify-center">
+                      <LogOut className="h-5 w-5 text-[#050505]" />
+                    </div>
+                    <span>Log Out</span>
+                  </button>
                 </div>
               )}
             </div>
 
-            {/* Mobile hamburger */}
+            {/* Mobile menu button */}
             <button
-              className="md:hidden p-2 rounded-full text-muted hover:bg-gray-100"
+              className="md:hidden w-10 h-10 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] flex items-center justify-center text-[#050505]"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -167,28 +224,28 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Nav Menu */}
+        {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-100 py-2 animate-fade-in">
+          <div className="md:hidden border-t border-gray-200 py-2 bg-white animate-fade-in shadow-lg">
             {navLinks.map(({ to, icon: Icon, label, badge }) => (
               <Link
                 key={to}
                 to={to}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`
-                  flex items-center gap-3 px-4 py-3 text-sm rounded-xl mx-1 transition-colors
-                  ${isActive(to) ? 'text-primary bg-primary-50 font-medium' : 'text-dark hover:bg-gray-50'}
+                  flex items-center gap-3 px-4 py-3 text-sm rounded-xl mx-2 font-medium transition-colors
+                  ${isActive(to) ? 'text-[#1877F2] bg-[#EBF3FE]' : 'text-[#050505] hover:bg-[#F2F2F2]'}
                 `}
               >
                 <div className="relative">
                   <Icon className="h-5 w-5" />
                   {badge > 0 && (
-                    <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-[#E41E3F] text-white text-[10px] font-bold flex items-center justify-center">
                       {badge > 9 ? '9+' : badge}
                     </span>
                   )}
                 </div>
-                {label}
+                <span>{label}</span>
               </Link>
             ))}
           </div>

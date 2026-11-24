@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
 import toast from 'react-hot-toast';
-import { Mail, Lock, Sparkles, Users, Shield, Heart } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -15,14 +12,14 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
-      toast.error('Please fill in all fields');
+      toast.error('Please enter your email and password');
       return;
     }
 
     try {
       setLoading(true);
       await login(formData.email, formData.password);
-      toast.success('Welcome back to SocialWave!');
+      toast.success('Welcome back!');
       navigate('/feed');
     } catch (err) {
       toast.error(err.message || 'Login failed. Please check credentials.');
@@ -32,86 +29,116 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        {/* Left Branding Showcase */}
-        <div className="space-y-6 hidden lg:block">
-          <div className="flex items-center gap-3">
-            <span className="text-5xl">🌊</span>
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              SocialWave
+    <div className="min-h-screen bg-[#F0F2F5] flex flex-col justify-between">
+      <div className="flex-1 flex items-center justify-center px-4 py-12 sm:py-20">
+        <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
+          {/* Left Facebook Brand */}
+          <div className="lg:col-span-7 text-center lg:text-left space-y-3">
+            <h1 className="text-5xl sm:text-6xl font-black text-[#1877F2] tracking-tighter">
+              facebook
             </h1>
-          </div>
-          <p className="text-xl text-gray-600 font-medium leading-relaxed">
-            Connect with friends, share your passions, and discover stories happening across the world.
-          </p>
-
-          <div className="space-y-4 pt-4">
-            <div className="flex items-center gap-3 text-gray-700">
-              <div className="p-2.5 rounded-lg bg-blue-100 text-primary">
-                <Users className="w-5 h-5" />
-              </div>
-              <span className="font-medium">Connect with friends, colleagues, and family</span>
-            </div>
-            <div className="flex items-center gap-3 text-gray-700">
-              <div className="p-2.5 rounded-lg bg-indigo-100 text-indigo-600">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <span className="font-medium">Share photos, videos, and 24-hour stories</span>
-            </div>
-            <div className="flex items-center gap-3 text-gray-700">
-              <div className="p-2.5 rounded-lg bg-green-100 text-green-600">
-                <Shield className="w-5 h-5" />
-              </div>
-              <span className="font-medium">Private, secure, and customizable privacy controls</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Form Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 sm:p-10">
-          <div className="text-center mb-8 lg:text-left">
-            <span className="text-3xl lg:hidden inline-block mb-2">🌊</span>
-            <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-            <p className="text-sm text-gray-500 mt-1">Sign in to your SocialWave account</p>
+            <p className="text-xl sm:text-2xl text-[#1C1E21] font-normal leading-relaxed max-w-md mx-auto lg:mx-0">
+              Connect with friends and the world around you on Facebook.
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Email Address"
-              type="email"
-              placeholder="you@example.com"
-              icon={Mail}
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
+          {/* Right Facebook Login Card */}
+          <div className="lg:col-span-5 max-w-md w-full mx-auto">
+            <div className="bg-white rounded-lg shadow-xl p-5 sm:p-6 space-y-4 border border-gray-200">
+              <form onSubmit={handleSubmit} className="space-y-3.5">
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Email or phone number"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                    className="w-full px-4 py-3.5 rounded-md border border-gray-300 focus:border-[#1877F2] focus:ring-1 focus:ring-[#1877F2] outline-none text-[17px] text-[#1C1E21] placeholder-[#8D949E] transition-all"
+                  />
+                </div>
 
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              icon={Lock}
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-            />
+                <div>
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    className="w-full px-4 py-3.5 rounded-md border border-gray-300 focus:border-[#1877F2] focus:ring-1 focus:ring-[#1877F2] outline-none text-[17px] text-[#1C1E21] placeholder-[#8D949E] transition-all"
+                  />
+                </div>
 
-            <Button type="submit" loading={loading} className="w-full mt-2">
-              Sign In
-            </Button>
-          </form>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-[#1877F2] hover:bg-[#166FE5] text-white text-xl font-bold rounded-md transition-colors shadow-sm disabled:opacity-50"
+                >
+                  {loading ? 'Logging in...' : 'Log In'}
+                </button>
+              </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="font-semibold text-primary hover:underline">
-                Create new account
-              </Link>
+              <div className="text-center pt-1">
+                <a href="#" className="text-sm text-[#1877F2] hover:underline">
+                  Forgot password?
+                </a>
+              </div>
+
+              <div className="border-t border-gray-300 my-4" />
+
+              <div className="text-center pb-2">
+                <Link
+                  to="/register"
+                  className="inline-block px-5 py-3 bg-[#42B72A] hover:bg-[#36A420] text-white text-[17px] font-bold rounded-md transition-colors shadow-sm"
+                >
+                  Create new account
+                </Link>
+              </div>
+            </div>
+
+            <p className="text-center text-xs text-[#1C1E21] mt-6">
+              <strong>Create a Page</strong> for a celebrity, brand or business.
             </p>
           </div>
         </div>
       </div>
+
+      {/* Facebook Classic Footer */}
+      <footer className="bg-white text-xs text-[#8A8D91] py-8 border-t border-gray-200">
+        <div className="max-w-5xl mx-auto px-4 space-y-2">
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            <span>English (US)</span>
+            <span>Español</span>
+            <span>Français (France)</span>
+            <span>Português (Brasil)</span>
+            <span>Deutsch</span>
+            <span>Italiano</span>
+            <span>বাংলা</span>
+            <span>العربية</span>
+            <span>हिन्दी</span>
+            <span>中文(简体)</span>
+            <span>日本語</span>
+          </div>
+          <div className="border-t border-gray-200 my-2" />
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <span>Sign Up</span>
+            <span>Log In</span>
+            <span>Messenger</span>
+            <span>Facebook Lite</span>
+            <span>Video</span>
+            <span>Places</span>
+            <span>Games</span>
+            <span>Marketplace</span>
+            <span>Meta Pay</span>
+            <span>Meta Store</span>
+            <span>Meta Quest</span>
+            <span>Instagram</span>
+            <span>Threads</span>
+            <span>Privacy Policy</span>
+            <span>Terms</span>
+          </div>
+          <p className="pt-2">Meta © 2024</p>
+        </div>
+      </footer>
     </div>
   );
 }
