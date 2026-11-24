@@ -91,8 +91,8 @@ const connectDB = async () => {
     });
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`❌ MongoDB connection failed: ${error.message}`);
-    process.exit(1);
+    console.warn(`⚠️ MongoDB connection warning: ${error.message}`);
+    console.log(`💡 Tip: Make sure MongoDB is running or set your MongoDB Atlas URI in backend/.env`);
   }
 };
 

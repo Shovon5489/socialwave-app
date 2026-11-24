@@ -188,6 +188,5 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 // Index for text search
 userSchema.index({ username: 'text', firstName: 'text', lastName: 'text' });
-userSchema.index({ email: 1 });
 
 module.exports = mongoose.model('User', userSchema);

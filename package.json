@@ -1,0 +1,22 @@
+{
+  "name": "socialwave",
+  "version": "1.0.0",
+  "description": "SocialWave - Full-Stack Social Media Platform (Facebook alternative)",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start:backend": "cd backend && npm start",
+    "build:frontend": "cd frontend && npm run build",
+    "seed": "cd backend && node src/utils/seedData.js"
+  },
+  "keywords": [
+    "social-media",
+    "facebook-clone",
+    "react",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
+  "author": "Shovon5489",
+  "license": "MIT"
+}
