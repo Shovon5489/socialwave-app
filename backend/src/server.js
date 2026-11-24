@@ -69,7 +69,8 @@ app.use(errorHandler);
 
 // ─── Database Connection & Server Start ───────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/socialwave';
+const VERIFIED_ATLAS_URI = 'mongodb+srv://shovon155489_db_user:Shovon25443823%40@cluster0.8yjjcrb.mongodb.net/socialwave?retryWrites=true&w=majority';
+let MONGODB_URI = (process.env.MONGODB_URI || VERIFIED_ATLAS_URI).trim().replace(/^["']|["']$/g, '');
 
 const connectDB = async () => {
   try {
@@ -78,8 +79,19 @@ const connectDB = async () => {
     });
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
   } catch (error) {
-    console.warn(`⚠️ MongoDB connection warning: ${error.message}`);
-    console.log(`💡 Tip: Make sure MongoDB is running or set your MongoDB Atlas URI in backend/.env`);
+    console.warn(`⚠️ Primary MongoDB connection warning: ${error.message}`);
+    if (MONGODB_URI !== VERIFIED_ATLAS_URI) {
+      console.log('⚡ Retrying with verified Atlas connection string...');
+      try {
+        const conn = await mongoose.connect(VERIFIED_ATLAS_URI, {
+          serverSelectionTimeoutMS: 5000,
+        });
+        console.log(`✅ MongoDB connected via Atlas fallback: ${conn.connection.host}`);
+        return;
+      } catch (retryErr) {
+        console.error(`❌ Fallback MongoDB connection failed: ${retryErr.message}`);
+      }
+    }
   }
 };
 
