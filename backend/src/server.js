@@ -18,20 +18,7 @@ const app = express();
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const corsOptions = {
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:4173',
-    ];
-    // Allow requests with no origin (mobile apps, curl, Postman)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS policy: origin ${origin} not allowed`));
-    }
-  },
+  origin: true, // Allow all origins including Vercel
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
