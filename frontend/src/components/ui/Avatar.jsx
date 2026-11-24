@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getInitials, getAvatarColor, getAvatarUrl } from '../../utils/helpers';
 
 const sizeConfig = {
@@ -21,11 +21,16 @@ export default function Avatar({
   onClick,
 }) {
   const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
   const cfg = sizeConfig[size] || sizeConfig.md;
   const initials = getInitials(name);
   const bgColor = getAvatarColor(name);
   const avatarUrl = src ? getAvatarUrl(src) : null;
-  const showImage = avatarUrl && !imgError;
+  const showImage = Boolean(avatarUrl && !imgError);
 
   return (
     <div

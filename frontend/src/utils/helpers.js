@@ -59,8 +59,10 @@ export function groupByTimePeriod(items, dateField = 'createdAt') {
  */
 export function getAvatarUrl(avatar) {
   if (!avatar) return null;
-  if (avatar.startsWith('http')) return avatar;
-  return `/uploads/${avatar}`;
+  if (avatar.startsWith('http') || avatar.startsWith('blob:') || avatar.startsWith('data:')) return avatar;
+  const backendBase = (import.meta.env.VITE_API_URL || 'https://socialwave-app.onrender.com/api').replace(/\/api\/?$/, '');
+  const cleanPath = avatar.startsWith('/') ? avatar : `/${avatar}`;
+  return `${backendBase}${cleanPath}`;
 }
 
 /**
@@ -135,8 +137,10 @@ export function parseHashtags(text) {
  */
 export function getMediaUrl(url) {
   if (!url) return '';
-  if (url.startsWith('http') || url.startsWith('blob')) return url;
-  return `/uploads/${url}`;
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+  const backendBase = (import.meta.env.VITE_API_URL || 'https://socialwave-app.onrender.com/api').replace(/\/api\/?$/, '');
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${backendBase}${cleanPath}`;
 }
 
 /**
