@@ -35,33 +35,35 @@ export default function Avatar({
 
   return (
     <div
-      className={`relative inline-flex flex-shrink-0 ${cfg.container} ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`relative inline-flex flex-shrink-0 rounded-full ${cfg.container} ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={onClick}
     >
-      {showImage ? (
-        <img
-          src={avatarUrl}
-          alt={name || 'Avatar'}
-          onError={() => setImgError(true)}
-          className={`
-            w-full h-full rounded-full object-cover
-            ${ring ? `${cfg.ring} ${ringColor}` : ''}
-          `}
-        />
-      ) : (
-        <div
-          className={`
-            w-full h-full rounded-full flex items-center justify-center font-semibold text-white select-none
-            ${ring ? `${cfg.ring} ${ringColor}` : ''}
-          `}
-          style={{ backgroundColor: bgColor }}
-        >
-          <span className={cfg.text}>{initials}</span>
-        </div>
-      )}
+      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+        {showImage ? (
+          <img
+            src={avatarUrl}
+            alt={name || 'Avatar'}
+            onError={() => setImgError(true)}
+            className={`
+              w-full h-full rounded-full object-cover
+              ${ring ? `${cfg.ring} ${ringColor}` : ''}
+            `}
+          />
+        ) : (
+          <div
+            className={`
+              w-full h-full rounded-full flex items-center justify-center font-semibold text-white select-none
+              ${ring ? `${cfg.ring} ${ringColor}` : ''}
+            `}
+            style={{ backgroundColor: bgColor }}
+          >
+            <span className={cfg.text}>{initials}</span>
+          </div>
+        )}
+      </div>
       {online && (
         <span
-          className={`absolute bottom-0 right-0 ${cfg.online} rounded-full bg-secondary border-2 border-white`}
+          className={`absolute bottom-0 right-0 ${cfg.online} rounded-full bg-secondary border-2 border-white z-10`}
         />
       )}
     </div>

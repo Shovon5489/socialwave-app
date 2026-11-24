@@ -162,7 +162,7 @@ export default function EditProfilePage() {
                   src={avatarPreview || user?.avatar}
                   name={user?.fullName || user?.username}
                   size="xl"
-                  className="ring-2 ring-white shadow-md !w-20 !h-20"
+                  className="ring-2 ring-white shadow-md rounded-full !w-20 !h-20"
                 />
                 <button
                   type="button"

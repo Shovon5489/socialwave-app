@@ -219,7 +219,7 @@ export default function ProfilePage() {
                     src={profileUser.avatar}
                     name={profileUser.fullName || profileUser.username}
                     size="3xl"
-                    className="ring-4 ring-white shadow-xl bg-white"
+                    className="ring-4 ring-white shadow-xl bg-white rounded-full"
                   />
                   {isOwnProfile && (
                     <>
@@ -416,14 +416,14 @@ export default function ProfilePage() {
               <p className="text-xs text-[#65676B] mb-3">{profileUser.friends?.length || 0} friends</p>
               <div className="grid grid-cols-3 gap-3">
                 {(profileUser.friends || []).slice(0, 6).map((friend) => (
-                  <Link key={friend._id || friend} to={`/profile/${friend.username}`} className="group block">
+                  <Link key={friend._id || friend} to={`/profile/${friend.username}`} className="group block text-center">
                     <Avatar
                       src={friend.avatar}
                       name={`${friend.firstName || ''} ${friend.lastName || ''}`}
                       size="xl"
-                      className="w-full aspect-square !rounded-lg"
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto ring-2 ring-gray-100 shadow-sm"
                     />
-                    <p className="text-xs font-semibold text-[#050505] mt-1 truncate group-hover:underline">
+                    <p className="text-xs font-semibold text-[#050505] mt-1.5 truncate group-hover:underline">
                       {friend.firstName} {friend.lastName}
                     </p>
                   </Link>
