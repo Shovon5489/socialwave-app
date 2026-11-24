@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
@@ -31,13 +31,6 @@ function authReducer(state, action) {
         loading: false,
       };
     case 'AUTH_ERROR':
-      return {
-        ...state,
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        loading: false,
-      };
     case 'LOGOUT':
       return {
         ...state,
@@ -59,13 +52,11 @@ function authReducer(state, action) {
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Set axios default auth header whenever token changes
+  // Set auth token in localStorage
   useEffect(() => {
     if (state.token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
       localStorage.setItem('token', state.token);
     } else {
-      delete axios.defaults.headers.common['Authorization'];
       localStorage.removeItem('token');
     }
   }, [state.token]);
@@ -78,9 +69,13 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      const res = await axios.get('/api/auth/me');
-      dispatch({ type: 'AUTH_LOADED', payload: res.data.user });
+      const res = await api.get('/auth/me');
+      const user = res.data?.data?.user || res.data?.user;
+      if (user) {
+        dispatch({ type: 'AUTH_LOADED', payload: user });
+      } else {
+        dispatch({ type: 'AUTH_ERROR' });
+      }
     } catch (err) {
       dispatch({ type: 'AUTH_ERROR' });
       localStorage.removeItem('token');
@@ -92,38 +87,48 @@ export function AuthProvider({ children }) {
   }, [loadUser]);
 
   const login = async (email, password) => {
+    dispatch({ type: 'AUTH_LOADING' });
     try {
-      dispatch({ type: 'AUTH_LOADING' });
-      const res = await axios.post('/api/auth/login', { email, password });
+      const res = await api.post('/auth/login', { email, password });
+      const user = res.data?.data?.user || res.data?.user;
+      const token = res.data?.data?.token || res.data?.token;
+
+      if (!token) {
+        throw new Error(res.data?.message || 'Login failed');
+      }
+
       dispatch({
         type: 'AUTH_SUCCESS',
-        payload: { user: res.data.user, token: res.data.token },
+        payload: { user, token },
       });
-      toast.success(`Welcome back, ${res.data.user.firstName}!`);
-      return { success: true };
+      return { success: true, user, token };
     } catch (err) {
       dispatch({ type: 'AUTH_ERROR' });
-      const message = err.response?.data?.message || 'Login failed. Please try again.';
-      toast.error(message);
-      return { success: false, error: message };
+      const message = err.response?.data?.message || err.message || 'Login failed. Please check credentials.';
+      throw new Error(message);
     }
   };
 
   const register = async (data) => {
+    dispatch({ type: 'AUTH_LOADING' });
     try {
-      dispatch({ type: 'AUTH_LOADING' });
-      const res = await axios.post('/api/auth/register', data);
+      const res = await api.post('/auth/register', data);
+      const user = res.data?.data?.user || res.data?.user;
+      const token = res.data?.data?.token || res.data?.token;
+
+      if (!token) {
+        throw new Error(res.data?.message || 'Registration failed');
+      }
+
       dispatch({
         type: 'AUTH_SUCCESS',
-        payload: { user: res.data.user, token: res.data.token },
+        payload: { user, token },
       });
-      toast.success(`Welcome to SocialWave, ${res.data.user.firstName}!`);
-      return { success: true };
+      return { success: true, user, token };
     } catch (err) {
       dispatch({ type: 'AUTH_ERROR' });
-      const message = err.response?.data?.message || 'Registration failed. Please try again.';
-      toast.error(message);
-      return { success: false, error: message };
+      const message = err.response?.data?.message || err.message || 'Registration failed. Please try again.';
+      throw new Error(message);
     }
   };
 

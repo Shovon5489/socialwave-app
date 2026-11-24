@@ -25,7 +25,7 @@ export default function LoginPage() {
       toast.success('Welcome back to SocialWave!');
       navigate('/feed');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed. Please check credentials.');
+      toast.error(err.message || 'Login failed. Please check credentials.');
     } finally {
       setLoading(false);
     }

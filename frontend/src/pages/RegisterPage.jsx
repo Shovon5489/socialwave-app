@@ -48,7 +48,7 @@ export default function RegisterPage() {
       toast.success('Account created! Welcome to SocialWave!');
       navigate('/feed');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Registration failed. Try a different username/email.');
+      toast.error(err.message || 'Registration failed. Try a different username/email.');
     } finally {
       setLoading(false);
     }
