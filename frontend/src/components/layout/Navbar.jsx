@@ -35,11 +35,13 @@ export default function Navbar() {
     }
   };
 
+  const profileUrl = user?.username ? `/profile/${user.username}` : '/profile';
+
   const navLinks = [
     { to: '/feed', icon: Home, label: 'Home' },
+    { to: profileUrl, icon: User, label: 'Profile' },
     { to: '/friends', icon: Users, label: 'Friends' },
     { to: '/saved', icon: Bookmark, label: 'Saved' },
-    { to: '/search', icon: Search, label: 'Search' },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -140,18 +142,30 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Profile Avatar Dropdown */}
+            {/* Direct Profile Pill Button */}
+            <Link
+              to={profileUrl}
+              className="flex items-center gap-2 py-1 px-2.5 rounded-full hover:bg-[#F2F2F2] transition-colors"
+              title="Go to your profile"
+            >
+              <Avatar
+                src={user?.avatar}
+                name={`${user?.firstName || ''} ${user?.lastName || ''}`}
+                size="sm"
+              />
+              <span className="font-bold text-[14px] text-[#050505] hidden xl:inline">
+                {user?.firstName || 'Profile'}
+              </span>
+            </Link>
+
+            {/* Profile Settings Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center rounded-full hover:ring-2 hover:ring-[#1877F2]/40 transition-all p-0.5"
+                className="w-10 h-10 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] flex items-center justify-center text-[#050505] transition-colors"
                 title="Account Controls and Settings"
               >
-                <Avatar
-                  src={user?.avatar}
-                  name={`${user?.firstName || ''} ${user?.lastName || ''}`}
-                  size="md"
-                />
+                <ChevronDown className={`h-5 w-5 text-[#050505] transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {dropdownOpen && (

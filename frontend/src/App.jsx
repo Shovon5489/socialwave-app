@@ -43,6 +43,19 @@ function PublicRoute({ children }) {
   return children;
 }
 
+function CurrentUserProfileRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader size="lg" />
+      </div>
+    );
+  }
+  if (!user?.username) return <Navigate to="/feed" replace />;
+  return <Navigate to={`/profile/${user.username}`} replace />;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -68,6 +81,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <FeedPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <CurrentUserProfileRedirect />
           </ProtectedRoute>
         }
       />
