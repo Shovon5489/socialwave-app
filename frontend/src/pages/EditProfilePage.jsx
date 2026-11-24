@@ -22,6 +22,8 @@ export default function EditProfilePage() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
+  const [coverPreview, setCoverPreview] = useState(user?.coverPhoto || null);
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
 
@@ -45,17 +47,21 @@ export default function EditProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Instant local preview
+    const localUrl = URL.createObjectURL(file);
+    setAvatarPreview(localUrl);
+
     const data = new FormData();
     data.append('avatar', file);
 
     try {
-      toast.loading('Uploading avatar...', { id: 'avatar-upload' });
+      toast.loading('Uploading profile picture...', { id: 'avatar-upload' });
       const res = await userAPI.uploadAvatar(data);
       const updated = res.data?.data?.user || res.data?.user;
       if (updated && updateUser) updateUser(updated);
-      toast.success('Avatar updated!', { id: 'avatar-upload' });
+      toast.success('Profile picture updated!', { id: 'avatar-upload' });
     } catch (err) {
-      toast.error('Failed to upload avatar', { id: 'avatar-upload' });
+      toast.error(err.response?.data?.message || 'Failed to upload profile picture', { id: 'avatar-upload' });
     }
   };
 
@@ -93,16 +99,25 @@ export default function EditProfilePage() {
         {/* Photos section */}
         <div className="space-y-4 mb-8">
           <label className="block text-sm font-semibold text-gray-700">Profile Media</label>
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="relative group">
-              <Avatar src={user?.avatar} name={user?.fullName || user?.username} size="xl" />
-              <button
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <div className="relative">
+              <Avatar
+                src={avatarPreview || user?.avatar}
+                name={user?.fullName || user?.username}
+                size="xl"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2.5">
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                icon={Camera}
                 onClick={() => avatarInputRef.current?.click()}
-                className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
               >
-                <Camera className="w-5 h-5" />
-              </button>
+                Change Profile Photo
+              </Button>
               <input
                 type="file"
                 ref={avatarInputRef}
@@ -110,24 +125,24 @@ export default function EditProfilePage() {
                 accept="image/*"
                 className="hidden"
               />
-            </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              icon={ImageIcon}
-              onClick={() => coverInputRef.current?.click()}
-            >
-              Change Cover Photo
-            </Button>
-            <input
-              type="file"
-              ref={coverInputRef}
-              onChange={handleCoverChange}
-              accept="image/*"
-              className="hidden"
-            />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                icon={ImageIcon}
+                onClick={() => coverInputRef.current?.click()}
+              >
+                Change Cover Photo
+              </Button>
+              <input
+                type="file"
+                ref={coverInputRef}
+                onChange={handleCoverChange}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
           </div>
         </div>
 
