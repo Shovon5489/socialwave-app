@@ -20,51 +20,52 @@ function PrivacyIcon({ privacy }) {
 }
 
 function MediaGrid({ media }) {
+  const [failedIndices, setFailedIndices] = useState(new Set());
   if (!media || media.length === 0) return null;
-  const urls = media.map((m) => ({ url: getMediaUrl(m.url || m), type: m.type || 'image' }));
 
-  if (urls.length === 1) {
+  const handleMediaError = (idx) => {
+    setFailedIndices((prev) => new Set([...prev, idx]));
+  };
+
+  const validMedia = media
+    .map((m, idx) => ({ url: getMediaUrl(m.url || m), type: m.type || 'image', idx }))
+    .filter((m) => !failedIndices.has(m.idx));
+
+  if (validMedia.length === 0) return null;
+
+  if (validMedia.length === 1) {
+    const item = validMedia[0];
     return (
-      <div className="rounded-xl overflow-hidden mt-3">
-        {urls[0].type === 'video' ? (
-          <video src={urls[0].url} controls className="w-full max-h-96 object-cover" />
+      <div className="rounded-xl overflow-hidden mt-3 bg-gray-100 border border-gray-200">
+        {item.type === 'video' ? (
+          <video
+            src={item.url}
+            controls
+            onError={() => handleMediaError(item.idx)}
+            className="w-full max-h-[480px] object-cover"
+          />
         ) : (
-          <img src={urls[0].url} alt="post media" className="w-full max-h-96 object-cover" />
+          <img
+            src={item.url}
+            alt="post media"
+            onError={() => handleMediaError(item.idx)}
+            className="w-full max-h-[480px] object-cover"
+          />
         )}
       </div>
     );
   }
-  if (urls.length === 2) {
-    return (
-      <div className="grid grid-cols-2 gap-1 mt-3 rounded-xl overflow-hidden">
-        {urls.map((m, i) => (
-          <img key={i} src={m.url} alt="" className="w-full h-48 object-cover" />
-        ))}
-      </div>
-    );
-  }
-  if (urls.length === 3) {
-    return (
-      <div className="grid grid-cols-2 gap-1 mt-3 rounded-xl overflow-hidden">
-        <img src={urls[0].url} alt="" className="w-full h-64 object-cover row-span-2" />
-        <img src={urls[1].url} alt="" className="w-full h-32 object-cover" />
-        <img src={urls[2].url} alt="" className="w-full h-32 object-cover" />
-      </div>
-    );
-  }
-  // 4+
-  const shown = urls.slice(0, 4);
-  const remaining = urls.length - 4;
+
   return (
-    <div className="grid grid-cols-2 gap-1 mt-3 rounded-xl overflow-hidden">
-      {shown.map((m, i) => (
-        <div key={i} className="relative">
-          <img src={m.url} alt="" className="w-full h-40 object-cover" />
-          {i === 3 && remaining > 0 && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-              <span className="text-white text-xl font-bold">+{remaining}</span>
-            </div>
-          )}
+    <div className={`grid gap-1 mt-3 rounded-xl overflow-hidden ${validMedia.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+      {validMedia.slice(0, 4).map((m, i) => (
+        <div key={i} className="relative bg-gray-100">
+          <img
+            src={m.url}
+            alt=""
+            onError={() => handleMediaError(m.idx)}
+            className="w-full h-48 object-cover"
+          />
         </div>
       ))}
     </div>

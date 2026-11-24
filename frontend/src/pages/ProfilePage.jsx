@@ -25,6 +25,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('posts');
   const [friendStatus, setFriendStatus] = useState('none');
   const [actionLoading, setActionLoading] = useState(false);
+  const [coverError, setCoverError] = useState(false);
 
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
@@ -169,27 +170,30 @@ export default function ProfilePage() {
   }
 
   return (
-    <MainLayout hideSidebars>
+    <MainLayout hideSidebars wide>
       <div className="max-w-6xl mx-auto space-y-4">
-        {/* Facebook Profile Header Card */}
+        {/* Profile Header Card */}
         <div className="bg-white rounded-b-2xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Cover Photo */}
-          <div className="h-56 sm:h-80 md:h-96 w-full bg-gradient-to-b from-gray-300 to-gray-400 relative group">
-            {profileUser.coverPhoto ? (
+          <div className="h-48 sm:h-72 md:h-80 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 relative group overflow-hidden">
+            {profileUser.coverPhoto && !coverError ? (
               <img
                 src={getMediaUrl(profileUser.coverPhoto)}
                 alt="Cover"
+                onError={() => setCoverError(true)}
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-r from-[#1877F2]/30 via-indigo-200 to-purple-200" />
+              <div className="w-full h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 opacity-95 flex items-center justify-center">
+                <span className="text-white/20 text-7xl select-none">🌊</span>
+              </div>
             )}
 
             {isOwnProfile && (
               <>
                 <button
                   onClick={() => coverInputRef.current?.click()}
-                  className="absolute bottom-4 right-4 bg-white/95 hover:bg-white text-[#050505] text-[14px] font-semibold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all hover:scale-[1.02]"
+                  className="absolute bottom-4 right-4 bg-white/95 hover:bg-white text-[#050505] text-[13px] sm:text-[14px] font-semibold px-3 sm:px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all hover:scale-[1.02]"
                 >
                   <Camera className="w-4 h-4 text-[#050505]" />
                   <span>Edit cover photo</span>
@@ -206,16 +210,16 @@ export default function ProfilePage() {
           </div>
 
           {/* Profile Details & Action Bar */}
-          <div className="px-6 pb-4 pt-2">
-            <div className="flex flex-col md:flex-row items-center md:items-end justify-between -mt-20 md:-mt-24 gap-4 pb-4 border-b border-gray-200">
-              <div className="flex flex-col md:flex-row items-center md:items-end gap-5 text-center md:text-left">
+          <div className="px-4 sm:px-8 pb-4">
+            <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-4 pb-4 border-b border-gray-200">
+              <div className="flex flex-col md:flex-row items-center md:items-end gap-4 sm:gap-6 text-center md:text-left">
                 {/* Profile Picture with Camera Overlay */}
-                <div className="relative inline-block">
+                <div className="relative inline-block -mt-16 sm:-mt-20 md:-mt-24 z-10">
                   <Avatar
                     src={profileUser.avatar}
                     name={profileUser.fullName || profileUser.username}
-                    size="2xl"
-                    className="ring-4 ring-white shadow-xl !w-40 !h-40"
+                    size="3xl"
+                    className="ring-4 ring-white shadow-xl bg-white"
                   />
                   {isOwnProfile && (
                     <>
@@ -238,7 +242,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Name, Friend Count & Bio */}
-                <div>
+                <div className="pt-2 md:pt-0">
                   <div className="flex items-center justify-center md:justify-start gap-2">
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-[#050505]">
                       {profileUser.firstName} {profileUser.lastName}
@@ -247,11 +251,11 @@ export default function ProfilePage() {
                       <ShieldCheck className="w-6 h-6 text-[#1877F2] fill-[#1877F2]/10" />
                     )}
                   </div>
-                  <p className="text-[15px] font-medium text-[#65676B] mt-0.5">
+                  <p className="text-[14px] sm:text-[15px] font-medium text-[#65676B] mt-0.5">
                     {profileUser.friends?.length || 0} friends
                   </p>
                   {profileUser.bio && (
-                    <p className="text-[14px] text-[#050505] mt-1 max-w-xl">
+                    <p className="text-[14px] text-[#050505] mt-1.5 max-w-xl">
                       {profileUser.bio}
                     </p>
                   )}
@@ -389,7 +393,13 @@ export default function ProfilePage() {
               ) : (
                 <div className="grid grid-cols-3 gap-1.5 rounded-lg overflow-hidden">
                   {postPhotos.map((photo, i) => (
-                    <img key={i} src={photo} alt="" className="w-full h-24 sm:h-28 object-cover hover:opacity-90 transition-opacity" />
+                    <img
+                      key={i}
+                      src={photo}
+                      alt=""
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      className="w-full h-24 sm:h-28 object-cover hover:opacity-90 transition-opacity bg-gray-100"
+                    />
                   ))}
                 </div>
               )}

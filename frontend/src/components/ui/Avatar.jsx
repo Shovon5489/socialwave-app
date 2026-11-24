@@ -8,6 +8,7 @@ const sizeConfig = {
   lg: { container: 'h-12 w-12', text: 'text-base', ring: 'ring-2', online: 'h-3 w-3' },
   xl: { container: 'h-16 w-16', text: 'text-xl', ring: 'ring-2', online: 'h-3.5 w-3.5' },
   '2xl': { container: 'h-24 w-24', text: 'text-3xl', ring: 'ring-4', online: 'h-4 w-4' },
+  '3xl': { container: 'h-36 w-36 sm:h-40 sm:w-40', text: 'text-4xl', ring: 'ring-4', online: 'h-5 w-5' },
 };
 
 export default function Avatar({
@@ -43,14 +44,14 @@ export default function Avatar({
           alt={name || 'Avatar'}
           onError={() => setImgError(true)}
           className={`
-            ${cfg.container} rounded-full object-cover
+            w-full h-full rounded-full object-cover
             ${ring ? `${cfg.ring} ${ringColor}` : ''}
           `}
         />
       ) : (
         <div
           className={`
-            ${cfg.container} rounded-full flex items-center justify-center font-semibold text-white select-none
+            w-full h-full rounded-full flex items-center justify-center font-semibold text-white select-none
             ${ring ? `${cfg.ring} ${ringColor}` : ''}
           `}
           style={{ backgroundColor: bgColor }}

@@ -58,7 +58,7 @@ export default function FriendsPage() {
   };
 
   return (
-    <MainLayout hideSidebars>
+    <MainLayout hideSidebars wide>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-w-4xl mx-auto space-y-6">
         <div className="border-b border-gray-100 pb-4">
           <h1 className="text-2xl font-bold text-gray-900">Friends</h1>

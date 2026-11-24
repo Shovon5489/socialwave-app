@@ -59,10 +59,13 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-[#F0F2F5] flex flex-col justify-between py-8 px-4">
       <div className="max-w-md w-full mx-auto my-auto">
-        {/* Facebook Logo Header */}
+        {/* SocialWave Logo Header */}
         <div className="text-center mb-6">
-          <Link to="/login">
-            <h1 className="text-5xl font-black text-[#1877F2] tracking-tighter">facebook</h1>
+          <Link to="/login" className="inline-flex items-center gap-2">
+            <span className="text-4xl">🌊</span>
+            <h1 className="text-4xl font-black bg-gradient-to-r from-[#1877F2] to-blue-700 bg-clip-text text-transparent tracking-tighter">
+              SocialWave
+            </h1>
           </Link>
         </div>
 

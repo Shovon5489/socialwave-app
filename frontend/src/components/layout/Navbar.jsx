@@ -39,7 +39,7 @@ export default function Navbar() {
     { to: '/feed', icon: Home, label: 'Home' },
     { to: '/friends', icon: Users, label: 'Friends' },
     { to: '/saved', icon: Bookmark, label: 'Saved' },
-    { to: '/notifications', icon: Bell, label: 'Notifications', badge: unreadCount },
+    { to: '/search', icon: Search, label: 'Search' },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -48,25 +48,25 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-200 h-14">
       <div className="max-w-[1920px] mx-auto px-4 h-full">
         <div className="flex items-center justify-between h-full">
-          {/* Left: Facebook Logo & Search */}
+          {/* Left: SocialWave Logo & Search */}
           <div className="flex items-center gap-2.5 flex-shrink-0">
-            <Link to="/feed" className="flex items-center gap-2 group" title="SocialWave Facebook">
-              <div className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white font-black text-2xl tracking-tighter select-none shadow-sm hover:opacity-95 transition-opacity">
-                f
-              </div>
-              <span className="font-bold text-xl text-[#1877F2] hidden xl:inline tracking-tight">facebook</span>
+            <Link to="/feed" className="flex items-center gap-2 group" title="SocialWave">
+              <span className="text-3xl leading-none">🌊</span>
+              <span className="font-extrabold text-2xl tracking-tight bg-gradient-to-r from-[#1877F2] to-blue-700 bg-clip-text text-transparent hidden sm:inline">
+                SocialWave
+              </span>
             </Link>
 
-            {/* Facebook Style Search Input */}
-            <form onSubmit={handleSearch} className="hidden md:flex items-center">
+            {/* Search Input */}
+            <form onSubmit={handleSearch} className="hidden md:flex items-center ml-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#65676B]" />
                 <input
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search Facebook"
-                  className="pl-9 pr-4 py-2 bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white border border-transparent focus:border-gray-300 rounded-full text-sm text-[#050505] placeholder-[#65676B] outline-none transition-all w-56 lg:w-64"
+                  placeholder="Search SocialWave"
+                  className="pl-9 pr-4 py-2 bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white border border-transparent focus:border-gray-300 rounded-full text-sm text-[#050505] placeholder-[#65676B] outline-none transition-all w-52 lg:w-64"
                 />
               </div>
             </form>

@@ -6,6 +6,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { useAuth } from '../hooks/useAuth';
 import { userAPI } from '../utils/api';
+import { getMediaUrl } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import { Camera, Image as ImageIcon, ArrowLeft } from 'lucide-react';
 
@@ -121,8 +122,9 @@ export default function EditProfilePage() {
             <div className="h-44 sm:h-52 w-full rounded-xl bg-gray-100 overflow-hidden relative border border-gray-200">
               {coverPreview || user?.coverPhoto ? (
                 <img
-                  src={coverPreview || user?.coverPhoto}
+                  src={getMediaUrl(coverPreview || user?.coverPhoto)}
                   alt="Cover preview"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   className="w-full h-full object-cover"
                 />
               ) : (

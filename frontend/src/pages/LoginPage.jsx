@@ -32,13 +32,16 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#F0F2F5] flex flex-col justify-between">
       <div className="flex-1 flex items-center justify-center px-4 py-12 sm:py-20">
         <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
-          {/* Left Facebook Brand */}
+          {/* Left SocialWave Brand */}
           <div className="lg:col-span-7 text-center lg:text-left space-y-3">
-            <h1 className="text-5xl sm:text-6xl font-black text-[#1877F2] tracking-tighter">
-              facebook
-            </h1>
+            <div className="flex items-center justify-center lg:justify-start gap-3">
+              <span className="text-5xl sm:text-6xl">🌊</span>
+              <h1 className="text-5xl sm:text-6xl font-black bg-gradient-to-r from-[#1877F2] to-blue-700 bg-clip-text text-transparent tracking-tighter">
+                SocialWave
+              </h1>
+            </div>
             <p className="text-xl sm:text-2xl text-[#1C1E21] font-normal leading-relaxed max-w-md mx-auto lg:mx-0">
-              Connect with friends and the world around you on Facebook.
+              Connect with friends and the world around you on SocialWave.
             </p>
           </div>
 

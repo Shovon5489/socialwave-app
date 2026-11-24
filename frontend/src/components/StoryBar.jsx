@@ -214,22 +214,13 @@ export default function StoryBar() {
           onClick={() => handleViewStory(0)}
           className="relative flex-shrink-0 w-28 sm:w-32 h-48 sm:h-52 rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200 hover:scale-[1.02] transition-transform duration-200 group flex flex-col"
         >
-          <div className="h-3/4 w-full bg-gray-100 overflow-hidden relative">
-            {user?.avatar ? (
-              <img
-                src={getMediaUrl(user.avatar)}
-                alt=""
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                <Avatar
-                  src={user?.avatar}
-                  name={`${user?.firstName || ''} ${user?.lastName || ''}`}
-                  size="xl"
-                />
-              </div>
-            )}
+          <div className="h-3/4 w-full bg-gradient-to-tr from-blue-100 to-indigo-100 overflow-hidden relative flex items-center justify-center">
+            <Avatar
+              src={user?.avatar}
+              name={`${user?.firstName || ''} ${user?.lastName || ''}`}
+              size="2xl"
+              className="w-full h-full !rounded-none"
+            />
           </div>
           {/* Blue Plus Button */}
           <div className="absolute left-1/2 -translate-x-1/2 top-[75%] -translate-y-1/2">
