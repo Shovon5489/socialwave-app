@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus, X, ChevronLeft, ChevronRight,
   Image as ImageIcon, Type, Trash2, Upload, Sparkles, Check
@@ -22,7 +22,7 @@ const BACKGROUND_PRESETS = [
   { id: 'vibrant-green', name: 'Vibrant Green', value: '#42B72A' },
 ];
 
-// Fallback initial stories so feed never looks empty
+// Fallback initial demo stories
 const DEFAULT_STORIES = [
   {
     _id: 'mock-1',
@@ -53,7 +53,7 @@ const DEFAULT_STORIES = [
 /**
  * Facebook-style Create Story Modal
  */
-function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
+function CreateStoryModal({ isOpen, onClose, onStoryCreated, initialFile, initialPreview }) {
   const { user } = useAuth();
   const [mode, setMode] = useState('photo'); // 'photo' | 'text'
   const [text, setText] = useState('');
@@ -63,15 +63,22 @@ function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Sync with direct file selection from gallery
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      if (initialFile && initialPreview) {
+        setMediaFile(initialFile);
+        setMediaPreview(initialPreview);
+        setMode('photo');
+      }
+    } else {
       setMode('photo');
       setText('');
       setMediaFile(null);
       setMediaPreview(null);
       setLoading(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialFile, initialPreview]);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -82,8 +89,8 @@ function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
       return;
     }
 
-    if (file.size > 25 * 1024 * 1024) {
-      toast.error('File size must be under 25MB');
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File size must be under 50MB');
       return;
     }
 
@@ -95,7 +102,7 @@ function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
     e.preventDefault();
 
     if (mode === 'photo' && !mediaFile) {
-      toast.error('Please choose a photo or video to share');
+      toast.error('Please choose a photo or video from your gallery');
       return;
     }
 
@@ -108,6 +115,19 @@ function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
     const toastId = toast.loading('Sharing your story...');
 
     try {
+      // Convert image to base64 data URL for permanent display
+      let mediaBase64 = null;
+      if (mediaFile && mediaFile.type.startsWith('image/')) {
+        try {
+          mediaBase64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(mediaFile);
+          });
+        } catch (_) {}
+      }
+
       const formData = new FormData();
       if (mediaFile) {
         formData.append('media', mediaFile);
@@ -115,37 +135,46 @@ function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
       formData.append('text', text.trim());
       formData.append('backgroundColor', selectedBg);
 
-      const res = await storyAPI.createStory(formData);
-      const newStory = res.data?.data?.story || res.data?.story;
-
-      toast.success('Story published successfully! 🎉', { id: toastId });
-      if (newStory && onStoryCreated) {
-        onStoryCreated(newStory);
+      let serverStory = null;
+      try {
+        const res = await storyAPI.createStory(formData);
+        serverStory = res.data?.data?.story || res.data?.story;
+      } catch (apiErr) {
+        console.warn('Server story API warning, using persistent local store:', apiErr);
       }
-      onClose();
-    } catch (err) {
-      console.error('Story upload failed:', err);
-      // Fallback: create local instant story preview if backend endpoint fails
-      const fallbackStory = {
-        _id: 'local-' + Date.now(),
+
+      const finalStory = serverStory || {
+        _id: 'story-' + Date.now(),
         author: {
-          _id: user?._id,
+          _id: user?._id || user?.id,
           firstName: user?.firstName || 'You',
           lastName: user?.lastName || '',
           username: user?.username || 'user',
           avatar: user?.avatar,
         },
-        media: mediaPreview,
+        media: mediaBase64 || mediaPreview,
         mediaType: mediaFile?.type.startsWith('video/') ? 'video' : 'image',
         text: text.trim(),
         backgroundColor: selectedBg,
         createdAt: new Date().toISOString(),
       };
+
       if (onStoryCreated) {
-        onStoryCreated(fallbackStory);
+        onStoryCreated(finalStory);
       }
-      toast.success('Story shared! 🎉', { id: toastId });
+
+      // Persist user stories in localStorage as well
+      try {
+        const savedStories = JSON.parse(localStorage.getItem('socialwave_user_stories') || '[]');
+        savedStories.unshift(finalStory);
+        localStorage.setItem('socialwave_user_stories', JSON.stringify(savedStories.slice(0, 10)));
+      } catch (_) {}
+
+      toast.success('Story published successfully! 🎉', { id: toastId });
       onClose();
+    } catch (err) {
+      console.error('Story upload failed:', err);
+      toast.error('Could not share story. Please try again.', { id: toastId });
     } finally {
       setLoading(false);
     }
@@ -231,7 +260,7 @@ function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
               )}
 
               {/* User Avatar badge preview */}
-              <div className="absolute top-3 left-3 flex items-center gap-2">
+              <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
                 <Avatar
                   src={user?.avatar}
                   name={`${user?.firstName || ''} ${user?.lastName || ''}`}
@@ -242,7 +271,7 @@ function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
 
               {/* Caption overlay for Photo Story */}
               {mode === 'photo' && text && (
-                <div className="absolute bottom-3 left-2 right-2 bg-black/60 backdrop-blur-sm p-2 rounded-xl text-white text-xs font-medium text-center line-clamp-2">
+                <div className="absolute bottom-3 left-2 right-2 bg-black/60 backdrop-blur-sm p-2 rounded-xl text-white text-xs font-medium text-center line-clamp-2 z-10">
                   {text}
                 </div>
               )}
@@ -269,9 +298,9 @@ function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
                   <Upload className="w-5 h-5" />
                 </div>
                 <span className="text-sm font-semibold text-[#050505]">
-                  {mediaFile ? `Selected: ${mediaFile.name}` : 'Click to upload Photo or Video'}
+                  {mediaFile ? `Selected: ${mediaFile.name} (Click to change)` : 'Open Gallery to choose Photo or Video'}
                 </span>
-                <span className="text-xs text-[#65676B]">PNG, JPG, MP4 or WEBM up to 25MB</span>
+                <span className="text-xs text-[#65676B]">PNG, JPG, MP4 or WEBM up to 50MB</span>
               </button>
 
               <div>
@@ -348,7 +377,7 @@ function CreateStoryModal({ isOpen, onClose, onStoryCreated }) {
             type="button"
             onClick={handleSubmit}
             disabled={loading || (mode === 'photo' && !mediaFile) || (mode === 'text' && !text.trim())}
-            className="px-6 py-2 rounded-xl text-sm font-semibold text-white bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center gap-2"
+            className="px-6 py-2 rounded-xl text-sm font-semibold text-white bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center gap-2 cursor-pointer"
           >
             {loading ? (
               <>
@@ -376,7 +405,10 @@ function StoryViewerModal({ stories, initialIndex, onClose, onDeleteStory }) {
   const DURATION = 5000; // 5s per story
 
   const story = stories[currentIndex];
-  const isAuthor = story?.author?._id === user?._id || story?.author?.username === user?.username;
+  const isAuthor =
+    story?.author?._id === user?._id ||
+    story?.author?.id === user?._id ||
+    story?.author?.username === user?.username;
 
   useEffect(() => {
     setProgress(0);
@@ -397,7 +429,7 @@ function StoryViewerModal({ stories, initialIndex, onClose, onDeleteStory }) {
     }, 50);
 
     // Call view API in background
-    if (story?._id && !story._id.startsWith('mock-') && !story._id.startsWith('local-')) {
+    if (story?._id && !story._id.startsWith('mock-') && !story._id.startsWith('story-')) {
       storyAPI.viewStory(story._id).catch(() => {});
     }
 
@@ -420,7 +452,7 @@ function StoryViewerModal({ stories, initialIndex, onClose, onDeleteStory }) {
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors z-20"
+        className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors z-20 cursor-pointer"
       >
         <X className="h-6 w-6" />
       </button>
@@ -464,7 +496,7 @@ function StoryViewerModal({ stories, initialIndex, onClose, onDeleteStory }) {
           {isAuthor && onDeleteStory && (
             <button
               onClick={() => onDeleteStory(story._id)}
-              className="p-1.5 rounded-full bg-red-600/80 hover:bg-red-700 text-white transition-colors shadow"
+              className="p-1.5 rounded-full bg-red-600/80 hover:bg-red-700 text-white transition-colors shadow cursor-pointer"
               title="Delete this story"
             >
               <Trash2 className="w-4 h-4" />
@@ -510,14 +542,14 @@ function StoryViewerModal({ stories, initialIndex, onClose, onDeleteStory }) {
         {/* Navigation Buttons */}
         <button
           onClick={handlePrev}
-          className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors z-20"
+          className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors z-20 cursor-pointer"
           disabled={currentIndex === 0}
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <button
           onClick={handleNext}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors z-20"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors z-20 cursor-pointer"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -537,11 +569,19 @@ function StoryCard({ story, onClick }) {
       style={{ background: story.media ? '#000' : story.backgroundColor || '#1877F2' }}
     >
       {story.media ? (
-        <img
-          src={getMediaUrl(story.media)}
-          alt="Story"
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        story.mediaType === 'video' ? (
+          <video
+            src={getMediaUrl(story.media)}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            muted
+          />
+        ) : (
+          <img
+            src={getMediaUrl(story.media)}
+            alt="Story"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        )
       ) : (
         <div className="absolute inset-0 flex items-center justify-center p-3">
           <p className="text-white text-xs sm:text-sm font-semibold text-center leading-snug drop-shadow-sm line-clamp-4">
@@ -570,7 +610,7 @@ function StoryCard({ story, onClick }) {
 }
 
 /**
- * StoryBar Component with working Story Upload & Viewer
+ * StoryBar Component with Direct Gallery Opening & Story Upload
  */
 export default function StoryBar() {
   const { user } = useAuth();
@@ -578,19 +618,42 @@ export default function StoryBar() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [pickedFile, setPickedFile] = useState(null);
+  const [pickedPreview, setPickedPreview] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Load active stories from backend API
+  // Hidden native file input ref for direct gallery opening
+  const directFileInputRef = useRef(null);
+
+  // Load active stories from backend API and local cache
   const loadStories = async () => {
+    let localSaved = [];
+    try {
+      localSaved = JSON.parse(localStorage.getItem('socialwave_user_stories') || '[]');
+      const now = Date.now();
+      localSaved = localSaved.filter((s) => {
+        const created = new Date(s.createdAt).getTime();
+        return now - created < 24 * 60 * 60 * 1000;
+      });
+    } catch (_) {}
+
     try {
       const res = await storyAPI.getStories();
       const serverStories = res.data?.data?.stories || res.data?.stories || [];
-      if (serverStories.length > 0) {
-        // Prepend server stories before default fallback mocks
-        setStories([...serverStories, ...DEFAULT_STORIES]);
+      const combined = [...localSaved];
+      for (const ss of serverStories) {
+        if (!combined.some((c) => c._id === ss._id)) {
+          combined.push(ss);
+        }
       }
+      for (const ds of DEFAULT_STORIES) {
+        if (!combined.some((c) => c._id === ds._id)) {
+          combined.push(ds);
+        }
+      }
+      setStories(combined);
     } catch (err) {
-      console.log('Using default stories:', err.message);
+      setStories([...localSaved, ...DEFAULT_STORIES]);
     }
   };
 
@@ -601,11 +664,40 @@ export default function StoryBar() {
   // Listen for ?createStory=true in URL (e.g. from Profile page "+ Add to story")
   useEffect(() => {
     if (searchParams.get('createStory') === 'true') {
-      setCreateModalOpen(true);
+      directFileInputRef.current?.click();
       searchParams.delete('createStory');
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  // When user clicks "+" or the Create story card: DIRECTLY OPEN GALLERY
+  const handleOpenGallery = () => {
+    if (directFileInputRef.current) {
+      directFileInputRef.current.click();
+    }
+  };
+
+  // Called immediately when user picks a photo/video from device gallery
+  const handleDirectFileSelected = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      toast.error('Please select an image or video file');
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File size must be under 50MB');
+      return;
+    }
+
+    setPickedFile(file);
+    setPickedPreview(URL.createObjectURL(file));
+    setCreateModalOpen(true);
+    // Reset so same file can be chosen again
+    e.target.value = '';
+  };
 
   const handleViewStory = (index) => {
     setViewerIndex(index);
@@ -619,24 +711,37 @@ export default function StoryBar() {
   const handleDeleteStory = async (storyId) => {
     try {
       await storyAPI.deleteStory(storyId);
-      setStories((prev) => prev.filter((s) => s._id !== storyId));
-      setViewerOpen(false);
-      toast.success('Story deleted');
-    } catch (err) {
-      setStories((prev) => prev.filter((s) => s._id !== storyId));
-      setViewerOpen(false);
-      toast.success('Story removed');
-    }
+    } catch (_) {}
+
+    // Also remove from localStorage cache if present
+    try {
+      const savedStories = JSON.parse(localStorage.getItem('socialwave_user_stories') || '[]');
+      const filtered = savedStories.filter((s) => s._id !== storyId);
+      localStorage.setItem('socialwave_user_stories', JSON.stringify(filtered));
+    } catch (_) {}
+
+    setStories((prev) => prev.filter((s) => s._id !== storyId));
+    setViewerOpen(false);
+    toast.success('Story deleted');
   };
 
   return (
     <>
+      {/* Hidden file input for direct Gallery / Photo & Video picker */}
+      <input
+        type="file"
+        ref={directFileInputRef}
+        onChange={handleDirectFileSelected}
+        accept="image/*,video/*"
+        className="hidden"
+      />
+
       <div className="flex gap-2.5 overflow-x-auto story-scroll pb-1.5 scrollbar-none">
-        {/* Facebook Create Story Card */}
-        <button
-          onClick={() => setCreateModalOpen(true)}
-          className="relative flex-shrink-0 w-28 sm:w-32 h-48 sm:h-52 rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200 hover:scale-[1.02] transition-transform duration-200 group flex flex-col text-left cursor-pointer"
-          title="Create a Story"
+        {/* Facebook Create Story Card - Clicking opens gallery directly */}
+        <div
+          onClick={handleOpenGallery}
+          className="relative flex-shrink-0 w-28 sm:w-32 h-48 sm:h-52 rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200 hover:scale-[1.02] transition-transform duration-200 group flex flex-col text-left cursor-pointer select-none"
+          title="Click to choose a photo or video from gallery"
         >
           {/* User's Avatar in Top Section */}
           <div className="h-3/4 w-full bg-gradient-to-tr from-blue-100 to-indigo-100 overflow-hidden relative flex items-center justify-center">
@@ -647,12 +752,19 @@ export default function StoryBar() {
               className="w-full h-full !rounded-none"
             />
             {/* Subtle dark overlay on hover */}
-            <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors" />
+            <div className="absolute inset-0 bg-black/5 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-[11px] font-bold px-2 py-1 rounded-full shadow backdrop-blur-xs">
+                Open Gallery
+              </span>
+            </div>
           </div>
 
           {/* Facebook Blue Plus Button */}
           <div className="absolute left-1/2 -translate-x-1/2 top-[75%] -translate-y-1/2 z-10">
-            <div className="h-9 w-9 rounded-full bg-[#1877F2] border-[3px] border-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-[#166FE5] transition-transform">
+            <div
+              className="h-9 w-9 rounded-full bg-[#1877F2] border-[3px] border-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:bg-[#166FE5] transition-transform"
+              title="Add photo or video from gallery"
+            >
               <Plus className="h-5 w-5 text-white stroke-[3]" />
             </div>
           </div>
@@ -663,7 +775,7 @@ export default function StoryBar() {
               Create story
             </p>
           </div>
-        </button>
+        </div>
 
         {/* Story Cards List */}
         {stories.map((story, index) => (
@@ -678,8 +790,14 @@ export default function StoryBar() {
       {/* Create Story Modal */}
       <CreateStoryModal
         isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        onClose={() => {
+          setCreateModalOpen(false);
+          setPickedFile(null);
+          setPickedPreview(null);
+        }}
         onStoryCreated={handleStoryCreated}
+        initialFile={pickedFile}
+        initialPreview={pickedPreview}
       />
 
       {/* Story Viewer Modal */}

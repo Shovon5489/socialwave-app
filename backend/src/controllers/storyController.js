@@ -44,8 +44,13 @@ const createStory = async (req, res) => {
       });
     }
 
+    const userId = req.user?.id || req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+
     const story = await Story.create({
-      author: req.user._id,
+      author: userId,
       media: mediaUrl,
       mediaType,
       text: text ? text.trim() : '',
@@ -108,8 +113,9 @@ const viewStory = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Story not found' });
     }
 
-    if (req.user && !story.viewers.includes(req.user._id)) {
-      story.viewers.push(req.user._id);
+    const userId = req.user?.id || req.user?._id;
+    if (userId && !story.viewers.some((v) => v.toString() === userId.toString())) {
+      story.viewers.push(userId);
       await story.save();
     }
 
@@ -132,7 +138,8 @@ const deleteStory = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Story not found' });
     }
 
-    if (story.author.toString() !== req.user._id.toString()) {
+    const userId = req.user?.id || req.user?._id;
+    if (!userId || story.author.toString() !== userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this story',
