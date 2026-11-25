@@ -193,11 +193,11 @@ export default function ProfilePage() {
               <>
                 <button
                   onClick={() => coverInputRef.current?.click()}
-                  className="absolute top-4 right-4 bg-white/90 hover:bg-white text-[#050505] text-[13px] sm:text-[14px] font-semibold px-3 sm:px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all hover:scale-[1.02] z-10 backdrop-blur-sm"
+                  className="absolute top-4 right-4 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-[#050505] shadow-md flex items-center justify-center transition-all hover:scale-105 z-10 backdrop-blur-sm border border-black/10"
                   title="Edit cover photo"
+                  aria-label="Edit cover photo"
                 >
-                  <Camera className="w-4 h-4 text-[#050505]" />
-                  <span>Edit cover photo</span>
+                  <Edit3 className="w-4 h-4 sm:w-5 sm:h-5 text-[#050505]" />
                 </button>
                 <input
                   type="file"
