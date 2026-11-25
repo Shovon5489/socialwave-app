@@ -5,7 +5,7 @@ import {
   ChevronDown, Menu, X, MessageCircle, Grid, Play,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { searchAPI } from '../../utils/api';
+import { searchAPI, notificationAPI } from '../../utils/api';
 import Avatar from '../ui/Avatar';
 
 export default function Navbar() {
@@ -18,9 +18,35 @@ export default function Navbar() {
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [searchResults, setSearchResults] = useState({ users: [], posts: [] });
   const [searchLoading, setSearchLoading] = useState(false);
-  const [unreadCount] = useState(3);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
   const searchContainerRef = useRef(null);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await notificationAPI.getUnreadCount();
+      const count = res.data?.data?.count ?? res.data?.count ?? 0;
+      setUnreadCount(count);
+    } catch (_) {
+      setUnreadCount(0);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 20000);
+      return () => clearInterval(interval);
+    } else {
+      setUnreadCount(0);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (location.pathname === '/notifications') {
+      setUnreadCount(0);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -249,7 +275,8 @@ export default function Navbar() {
             {/* Notification Bell */}
             <Link
               to="/notifications"
-              className="relative w-10 h-10 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] flex items-center justify-center text-[#050505] transition-colors"
+              onClick={() => setUnreadCount(0)}
+              className="relative w-10 h-10 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] flex items-center justify-center text-[#050505] transition-colors cursor-pointer"
               title="Notifications"
             >
               <Bell className="h-5 w-5" />

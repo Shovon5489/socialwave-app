@@ -17,6 +17,11 @@ export default function NotificationsPage() {
       const res = await notificationAPI.getNotifications();
       const items = res.data?.data?.notifications || res.data?.notifications || [];
       setNotifications(items);
+
+      // Automatically mark notifications as read on backend when viewing
+      if (items.some((n) => !n.isRead)) {
+        notificationAPI.markAllRead().catch(() => {});
+      }
     } catch (err) {
       console.error('Error fetching notifications:', err);
       toast.error('Could not load notifications');
