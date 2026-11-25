@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import {
   MapPin, Globe, Calendar, Edit3, UserPlus, UserCheck,
   UserX, Camera, Plus, MoreHorizontal, Image as ImageIcon,
-  ShieldCheck, Briefcase, Home as HomeIcon,
+  ShieldCheck, Briefcase, Home as HomeIcon, Edit,
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -197,7 +197,7 @@ export default function ProfilePage() {
                   title="Edit cover photo"
                   aria-label="Edit cover photo"
                 >
-                  <Edit3 className="w-4 h-4 sm:w-5 sm:h-5 text-[#050505]" />
+                  <Edit className="w-4 h-4 sm:w-5 sm:h-5 text-[#050505]" />
                 </button>
                 <input
                   type="file"
