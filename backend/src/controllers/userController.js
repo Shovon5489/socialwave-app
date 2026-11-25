@@ -517,13 +517,28 @@ const searchUsers = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Search query is required' });
     }
 
+    const words = query.trim().split(/\s+/).filter(Boolean);
+    const orConditions = [
+      { username: { $regex: query.trim(), $options: 'i' } },
+      { firstName: { $regex: query.trim(), $options: 'i' } },
+      { lastName: { $regex: query.trim(), $options: 'i' } },
+    ];
+
+    if (words.length > 1) {
+      orConditions.push({
+        $and: words.map((w) => ({
+          $or: [
+            { firstName: { $regex: w, $options: 'i' } },
+            { lastName: { $regex: w, $options: 'i' } },
+            { username: { $regex: w, $options: 'i' } },
+          ],
+        })),
+      });
+    }
+
     const filter = {
-      $or: [
-        { username: { $regex: query, $options: 'i' } },
-        { firstName: { $regex: query, $options: 'i' } },
-        { lastName: { $regex: query, $options: 'i' } },
-      ],
-      isActive: true,
+      $or: orConditions,
+      isActive: { $ne: false },
     };
 
     const [users, total] = await Promise.all([

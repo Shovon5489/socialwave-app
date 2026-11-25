@@ -3,6 +3,36 @@ const Post = require('../models/Post');
 
 const AUTHOR_FIELDS = '_id username firstName lastName fullName avatar isVerified';
 
+const buildUserSearchFilter = (query) => {
+  const clean = (query || '').trim();
+  if (!clean) return { _id: null };
+
+  const words = clean.split(/\s+/).filter(Boolean);
+
+  const orConditions = [
+    { username: { $regex: clean, $options: 'i' } },
+    { firstName: { $regex: clean, $options: 'i' } },
+    { lastName: { $regex: clean, $options: 'i' } },
+  ];
+
+  if (words.length > 1) {
+    orConditions.push({
+      $and: words.map((w) => ({
+        $or: [
+          { firstName: { $regex: w, $options: 'i' } },
+          { lastName: { $regex: w, $options: 'i' } },
+          { username: { $regex: w, $options: 'i' } },
+        ],
+      })),
+    });
+  }
+
+  return {
+    $or: orConditions,
+    isActive: { $ne: false },
+  };
+};
+
 /**
  * @route   GET /api/search?q=...
  * @access  Public
@@ -17,15 +47,8 @@ const search = async (req, res, next) => {
     }
 
     const [users, posts] = await Promise.all([
-      User.find({
-        $or: [
-          { username: { $regex: query, $options: 'i' } },
-          { firstName: { $regex: query, $options: 'i' } },
-          { lastName: { $regex: query, $options: 'i' } },
-        ],
-        isActive: true,
-      })
-        .select(AUTHOR_FIELDS + ' bio')
+      User.find(buildUserSearchFilter(query))
+        .select(AUTHOR_FIELDS + ' bio location')
         .limit(limit),
 
       Post.find({
@@ -65,14 +88,7 @@ const searchUsers = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Search query is required' });
     }
 
-    const filter = {
-      $or: [
-        { username: { $regex: query, $options: 'i' } },
-        { firstName: { $regex: query, $options: 'i' } },
-        { lastName: { $regex: query, $options: 'i' } },
-      ],
-      isActive: true,
-    };
+    const filter = buildUserSearchFilter(query);
 
     const [users, total] = await Promise.all([
       User.find(filter).select(AUTHOR_FIELDS + ' bio location').skip(skip).limit(limit),

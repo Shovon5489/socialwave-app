@@ -5,6 +5,7 @@ import {
   ChevronDown, Menu, X, MessageCircle, Grid, Play,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { searchAPI } from '../../utils/api';
 import Avatar from '../ui/Avatar';
 
 export default function Navbar() {
@@ -14,24 +15,62 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState({ users: [], posts: [] });
+  const [searchLoading, setSearchLoading] = useState(false);
   const [unreadCount] = useState(3);
   const dropdownRef = useRef(null);
+  const searchContainerRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setSearchDropdownOpen(false);
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults({ users: [], posts: [] });
+      setSearchDropdownOpen(false);
+      return;
+    }
+
+    setSearchDropdownOpen(true);
+    setSearchLoading(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await searchAPI.search(q);
+        const data = res.data?.data || res.data || {};
+        setSearchResults({
+          users: data.users || [],
+          posts: data.posts || [],
+        });
+      } catch (err) {
+        console.warn('Navbar live search error:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setSearchDropdownOpen(false);
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
+      setMobileMenuOpen(false);
     }
   };
 
@@ -59,19 +98,98 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* Search Input */}
-            <form onSubmit={handleSearch} className="hidden md:flex items-center ml-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#65676B]" />
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search SocialWave"
-                  className="pl-9 pr-4 py-2 bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white border border-transparent focus:border-gray-300 rounded-full text-sm text-[#050505] placeholder-[#65676B] outline-none transition-all w-52 lg:w-64"
-                />
-              </div>
-            </form>
+            {/* Search Input with Facebook-style Live Results Dropdown */}
+            <div ref={searchContainerRef} className="relative hidden md:flex items-center ml-2">
+              <form onSubmit={handleSearch}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#65676B]" />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => {
+                      if (searchQuery.trim()) setSearchDropdownOpen(true);
+                    }}
+                    placeholder="Search SocialWave"
+                    className="pl-9 pr-4 py-2 bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white border border-transparent focus:border-[#1877F2] rounded-full text-sm text-[#050505] placeholder-[#65676B] outline-none transition-all w-52 lg:w-72 shadow-inner focus:shadow-md"
+                  />
+                </div>
+              </form>
+
+              {/* Live Search Floating Dropdown */}
+              {searchDropdownOpen && searchQuery.trim() && (
+                <div className="absolute left-0 top-full mt-2 w-80 lg:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-fade-in divide-y divide-gray-100">
+                  {/* Results Header */}
+                  <div className="p-3 bg-gray-50 flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#65676B] uppercase tracking-wider">
+                      Search Results
+                    </span>
+                    {searchLoading && (
+                      <div className="w-3.5 h-3.5 border-2 border-[#1877F2] border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </div>
+
+                  {/* Users / Friends list */}
+                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                    {searchResults.users.length > 0 ? (
+                      searchResults.users.map((person) => {
+                        const isFriend = (user?.friends || []).some(
+                          (f) => (f._id || f?.id || f) === person._id
+                        );
+                        return (
+                          <div
+                            key={person._id}
+                            onClick={() => {
+                              navigate(`/profile/${person.username}`);
+                              setSearchDropdownOpen(false);
+                              setSearchQuery('');
+                            }}
+                            className="flex items-center gap-3 p-2.5 px-3 hover:bg-[#F2F2F2] cursor-pointer transition-colors"
+                          >
+                            <Avatar
+                              src={person.avatar}
+                              name={`${person.firstName || ''} ${person.lastName || ''}`}
+                              size="md"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-semibold text-sm text-[#050505] truncate">
+                                  {person.firstName} {person.lastName}
+                                </p>
+                                {isFriend && (
+                                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-[#1877F2]">
+                                    Friend
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-[#65676B] truncate">
+                                @{person.username}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      !searchLoading && (
+                        <div className="p-4 text-center text-sm text-[#65676B]">
+                          No people found for "{searchQuery}"
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  {/* View all search results button */}
+                  <button
+                    type="button"
+                    onClick={handleSearch}
+                    className="w-full p-3 flex items-center gap-2.5 text-sm font-semibold text-[#1877F2] hover:bg-blue-50/60 transition-colors text-left cursor-pointer"
+                  >
+                    <Search className="w-4 h-4 text-[#1877F2]" />
+                    <span>See all results for "{searchQuery}"</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Center: Facebook 4-5 Navigation Tabs */}
@@ -241,6 +359,19 @@ export default function Navbar() {
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 py-2 bg-white animate-fade-in shadow-lg">
+            {/* Mobile Search Input */}
+            <form onSubmit={handleSearch} className="px-3 pb-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#65676B]" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search SocialWave"
+                  className="w-full pl-9 pr-4 py-2 bg-[#F0F2F5] rounded-full text-sm outline-none border border-transparent focus:border-[#1877F2]"
+                />
+              </div>
+            </form>
             {navLinks.map(({ to, icon: Icon, label, badge }) => (
               <Link
                 key={to}

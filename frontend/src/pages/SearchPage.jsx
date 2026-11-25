@@ -5,9 +5,11 @@ import FriendCard from '../components/FriendCard';
 import PostCard from '../components/PostCard';
 import Loader from '../components/ui/Loader';
 import { searchAPI } from '../utils/api';
+import { useAuth } from '../hooks/useAuth';
 import { Search as SearchIcon, Users, FileText } from 'lucide-react';
 
 export default function SearchPage() {
+  const { user: currentUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
 
@@ -16,6 +18,26 @@ export default function SearchPage() {
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const getFriendshipType = (personId) => {
+    if (!currentUser || !personId) return 'suggestion';
+    const isFriend = (currentUser.friends || []).some(
+      (f) => (f._id || f?.id || f) === personId
+    );
+    if (isFriend) return 'friend';
+
+    const hasReceivedReq = (currentUser.friendRequests || []).some(
+      (r) => (r.from?._id || r.from?.id || r.from || r) === personId
+    );
+    if (hasReceivedReq) return 'request';
+
+    const hasSentReq = (currentUser.sentFriendRequests || []).some(
+      (r) => (r.to?._id || r.to?.id || r.to || r) === personId
+    );
+    if (hasSentReq) return 'pending';
+
+    return 'suggestion';
+  };
 
   const performSearch = async (searchTerm) => {
     if (!searchTerm.trim()) {
@@ -135,7 +157,11 @@ export default function SearchPage() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {users.map((person) => (
-                    <FriendCard key={person._id} user={person} type="suggestion" />
+                    <FriendCard
+                      key={person._id}
+                      user={person}
+                      type={getFriendshipType(person._id)}
+                    />
                   ))}
                 </div>
               </div>
