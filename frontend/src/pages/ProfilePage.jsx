@@ -267,13 +267,13 @@ export default function ProfilePage() {
               <div className="flex items-center gap-2.5 flex-wrap justify-center">
                 {isOwnProfile ? (
                   <>
-                    <button
-                      onClick={() => toast.success('Story creator opened!')}
+                    <Link
+                      to="/feed?createStory=true"
                       className="px-4 py-2 rounded-lg bg-[#1877F2] hover:bg-[#166FE5] text-white font-semibold text-[15px] flex items-center gap-2 transition-colors shadow-sm"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Add to story</span>
-                    </button>
+                    </Link>
                     <Link
                       to="/profile/edit"
                       className="px-4 py-2 rounded-lg bg-[#E4E6EB] hover:bg-[#D8DADF] text-[#050505] font-semibold text-[15px] flex items-center gap-2 transition-colors"

@@ -98,6 +98,17 @@ export const notificationAPI = {
   deleteNotification: (notificationId) => api.delete(`/notifications/${notificationId}`),
 };
 
+// ---- Story API ----
+export const storyAPI = {
+  getStories: () => api.get('/stories'),
+  createStory: (formData) =>
+    api.post('/stories', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  viewStory: (id) => api.put(`/stories/${id}/view`),
+  deleteStory: (id) => api.delete(`/stories/${id}`),
+};
+
 // ---- Search API ----
 export const searchAPI = {
   search: (query) => api.get(`/search?q=${encodeURIComponent(query)}`),

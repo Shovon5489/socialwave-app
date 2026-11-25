@@ -89,6 +89,13 @@ const uploadPost = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB (covers both image and video)
 }).array('media', 10);
 
+/** Upload a single media file for a story (field name: 'media') */
+const uploadStory = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+}).single('media');
+
 /**
  * Wrapper middleware that converts multer errors to consistent JSON responses.
  * @param {Function} multerMiddleware - One of the multer instances above.
@@ -113,4 +120,5 @@ module.exports = {
   uploadAvatar: handleUpload(uploadAvatar),
   uploadCover: handleUpload(uploadCover),
   uploadPost: handleUpload(uploadPost),
+  uploadStory: handleUpload(uploadStory),
 };
