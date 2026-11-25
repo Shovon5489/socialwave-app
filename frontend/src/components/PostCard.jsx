@@ -264,6 +264,11 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareText, setShareText] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editContent, setEditContent] = useState(post.content || '');
+  const [editPrivacy, setEditPrivacy] = useState(post.privacy || 'public');
+  const [editLocation, setEditLocation] = useState(post.location || '');
+  const [editLoading, setEditLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const menuRef = useRef(null);
   const reactionBoxRef = useRef(null);
@@ -271,7 +276,51 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
   const leaveTimerRef = useRef(null);
   const longPressTimerRef = useRef(null);
   const longPressTriggeredRef = useRef(false);
-  const isOwner = user?._id === (post.author?._id || post.author);
+  const isOwner = (user?._id || user?.id)?.toString() === (post.author?._id || post.author)?.toString();
+
+  const openEditModal = () => {
+    setEditContent(post.content || '');
+    setEditPrivacy(post.privacy || 'public');
+    setEditLocation(post.location || '');
+    setMenuOpen(false);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim() && (!post.media || post.media.length === 0)) {
+      toast.error('Post content cannot be empty');
+      return;
+    }
+    try {
+      setEditLoading(true);
+      const res = await postAPI.updatePost(post._id, {
+        content: editContent.trim(),
+        privacy: editPrivacy,
+        location: editLocation.trim(),
+      });
+      const updated = res.data?.data?.post || res.data?.post;
+      if (updated) {
+        setPost(updated);
+        onUpdate?.(updated);
+      } else {
+        const localUpdated = {
+          ...post,
+          content: editContent.trim(),
+          privacy: editPrivacy,
+          location: editLocation.trim(),
+          isEdited: true,
+        };
+        setPost(localUpdated);
+        onUpdate?.(localUpdated);
+      }
+      setEditModalOpen(false);
+      toast.success('Post updated!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update post');
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -467,7 +516,7 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
                 {isOwner && (
                   <>
                     <button
-                      onClick={() => { setMenuOpen(false); onUpdate?.(post); }}
+                      onClick={openEditModal}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-dark hover:bg-gray-50"
                     >
                       <Pencil className="h-4 w-4" />
@@ -674,6 +723,66 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
           </div>
         )}
       </article>
+
+      {/* Edit Post Modal */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title="Edit Post"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} loading={editLoading}>Save Changes</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <Avatar
+                src={user?.avatar}
+                name={`${user?.firstName || ''} ${user?.lastName || ''}`}
+                size="sm"
+              />
+              <div>
+                <p className="text-sm font-semibold text-[#050505]">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <select
+                  value={editPrivacy}
+                  onChange={(e) => setEditPrivacy(e.target.value)}
+                  className="mt-0.5 text-xs bg-[#E4E6EB] text-[#050505] font-medium rounded-md px-2 py-0.5 outline-none cursor-pointer"
+                >
+                  <option value="public">🌍 Public</option>
+                  <option value="friends">👥 Friends</option>
+                  <option value="private">🔒 Only me</option>
+                </select>
+              </div>
+            </div>
+            <EmojiPicker
+              size="sm"
+              position="bottom-right"
+              onEmojiSelect={(emoji) => setEditContent((prev) => prev + emoji)}
+            />
+          </div>
+
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            placeholder="What's on your mind?"
+            rows={4}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-[#050505] focus:outline-none focus:ring-2 focus:ring-[#1877F2]/30 resize-none"
+          />
+
+          <input
+            type="text"
+            value={editLocation}
+            onChange={(e) => setEditLocation(e.target.value)}
+            placeholder="📍 Location (optional)"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-[#050505] focus:outline-none focus:ring-2 focus:ring-[#1877F2]/30"
+          />
+        </div>
+      </Modal>
 
       {/* Share Modal */}
       <Modal
