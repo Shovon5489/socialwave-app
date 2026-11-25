@@ -1,21 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  X, Minus, Send, Smile, Image as ImageIcon,
+  X, Minus, Send, Image as ImageIcon,
   Paperclip, Maximize2
 } from 'lucide-react';
 import Avatar from '../ui/Avatar';
+import EmojiPicker from '../ui/EmojiPicker';
 import { messageAPI } from '../../utils/api';
 import { useAuth } from '../../hooks/useAuth';
 import { getMediaUrl } from '../../utils/helpers';
 import toast from 'react-hot-toast';
-
-// Curated popular emojis for quick picking
-const POPULAR_EMOJIS = [
-  '😀', '😂', '😍', '🥰', '😎', '🔥', '👍', '❤️',
-  '🎉', '👏', '🙌', '✨', '🌊', '🥳', '💯', '🙏',
-  '😊', '😭', '🤩', '🚀', '⭐', '🎈', '🍕', '☕',
-  '💪', '💖', '👀', '🤝', '😉', '😜', '😇', '😋'
-];
 
 export default function ChatBox({ chat, onClose, onToggleMinimize, offsetIndex = 0 }) {
   const { user: otherUser, minimized } = chat;
@@ -25,7 +18,6 @@ export default function ChatBox({ chat, onClose, onToggleMinimize, offsetIndex =
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
 
@@ -329,21 +321,7 @@ export default function ChatBox({ chat, onClose, onToggleMinimize, offsetIndex =
         </div>
       )}
 
-      {/* Emoji Picker Popover */}
-      {showEmojiPicker && (
-        <div className="p-2.5 bg-white border-t border-gray-200 shadow-inner grid grid-cols-8 gap-1 text-xl max-h-36 overflow-y-auto">
-          {POPULAR_EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => handleAddEmoji(emoji)}
-              className="p-1 hover:bg-gray-100 rounded-lg transition-transform hover:scale-125 flex items-center justify-center cursor-pointer"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Emoji Picker Popover — now handled by EmojiPicker component below */}
 
       {/* Input Bar */}
       <form
@@ -360,17 +338,12 @@ export default function ChatBox({ chat, onClose, onToggleMinimize, offsetIndex =
           <ImageIcon className="w-5 h-5" />
         </button>
 
-        {/* Emoji Button */}
-        <button
-          type="button"
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className={`p-2 rounded-full transition-colors cursor-pointer ${
-            showEmojiPicker ? 'bg-[#EBF3FE] text-[#1877F2]' : 'text-amber-500 hover:bg-amber-50'
-          }`}
-          title="Pick Emoji"
-        >
-          <Smile className="w-5 h-5" />
-        </button>
+        {/* Emoji Button — using the rich EmojiPicker */}
+        <EmojiPicker
+          onEmojiSelect={handleAddEmoji}
+          position="top-left"
+          size="md"
+        />
 
         {/* Text Input */}
         <input

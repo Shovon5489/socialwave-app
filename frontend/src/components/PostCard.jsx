@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 import Avatar from './ui/Avatar';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
+import EmojiPicker from './ui/EmojiPicker';
 import toast from 'react-hot-toast';
 
 function PrivacyIcon({ privacy }) {
@@ -113,6 +114,7 @@ function CommentItem({ comment, postId, onDelete }) {
   const [showReplies, setShowReplies] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [replies, setReplies] = useState(comment.replies || []);
+  const replyInputRef = useRef(null);
 
   const handleLike = async () => {
     try {
@@ -173,12 +175,24 @@ function CommentItem({ comment, postId, onDelete }) {
           <div className="mt-2 ml-2">
             <form onSubmit={handleReply} className="flex gap-2 items-center">
               <Avatar src={user?.avatar} name={`${user?.firstName || ''} ${user?.lastName || ''}`} size="xs" />
-              <input
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Write a reply..."
-                className="flex-1 bg-background rounded-full px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-              />
+              <div className="flex-1 relative flex items-center gap-1">
+                <input
+                  ref={replyInputRef}
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Write a reply..."
+                  className="flex-1 bg-background rounded-full pl-3 pr-10 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                {/* Emoji picker for reply */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
+                  <EmojiPicker
+                    size="sm"
+                    position="top-right"
+                    onEmojiSelect={(emoji) => setReplyText((prev) => prev + emoji)}
+                    buttonClassName="p-0.5 rounded-full text-amber-400 hover:bg-amber-50 transition-colors"
+                  />
+                </div>
+              </div>
               {replyText.trim() && (
                 <button type="submit" className="text-primary">
                   <Send className="h-3.5 w-3.5" />
@@ -455,21 +469,30 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
                 name={`${user?.firstName || ''} ${user?.lastName || ''}`}
                 size="sm"
               />
-              <div className="flex-1 relative">
+              <div className="flex-1 relative flex items-center">
                 <input
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Write a comment..."
-                  className="w-full bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white rounded-full pl-4 pr-10 py-2 text-[14px] text-[#050505] placeholder-[#65676B] border border-transparent focus:border-gray-300 outline-none transition-all"
+                  className="w-full bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white rounded-full pl-4 pr-20 py-2 text-[14px] text-[#050505] placeholder-[#65676B] border border-transparent focus:border-gray-300 outline-none transition-all"
                 />
-                {commentText.trim() && (
-                  <button
-                    type="submit"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1877F2] hover:opacity-80 p-1"
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
-                )}
+                {/* Emoji & Send buttons inside the input */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                  <EmojiPicker
+                    size="sm"
+                    position="top-right"
+                    onEmojiSelect={(emoji) => setCommentText((prev) => prev + emoji)}
+                    buttonClassName="p-1 rounded-full text-amber-400 hover:bg-amber-50 transition-colors"
+                  />
+                  {commentText.trim() && (
+                    <button
+                      type="submit"
+                      className="p-1 text-[#1877F2] hover:opacity-80"
+                    >
+                      <Send className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
             {/* Comments List */}
