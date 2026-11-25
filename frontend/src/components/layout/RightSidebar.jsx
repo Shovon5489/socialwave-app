@@ -1,18 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MoreHorizontal, Video } from 'lucide-react';
+import { Search, MoreHorizontal, Video, MessageCircle } from 'lucide-react';
 import Avatar from '../ui/Avatar';
-
-const mockContacts = [
-  { _id: '1', firstName: 'Emma', lastName: 'Wilson', username: 'emmaw', online: true },
-  { _id: '2', firstName: 'James', lastName: 'Brown', username: 'jbrown', online: true },
-  { _id: '3', firstName: 'Sofia', lastName: 'Lee', username: 'sofialee', online: true },
-  { _id: '4', firstName: 'Alice', lastName: 'Johnson', username: 'alicej', online: false },
-  { _id: '5', firstName: 'Bob', lastName: 'Smith', username: 'bobsmith', online: true },
-];
+import { userAPI } from '../../utils/api';
+import { useChat } from '../../context/ChatContext';
 
 export default function RightSidebar() {
-  const [contacts] = useState(mockContacts);
+  const { openChat } = useChat();
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadContacts = async () => {
+      try {
+        const [friendsRes, sugRes] = await Promise.allSettled([
+          userAPI.getFriends(),
+          userAPI.getSuggestedFriends(),
+        ]);
+
+        let list = [];
+        if (friendsRes.status === 'fulfilled') {
+          const friends = friendsRes.value.data?.data?.friends || friendsRes.value.data?.friends || [];
+          list = [...friends];
+        }
+
+        // If friends list is short, also include suggestions as contacts
+        if (sugRes.status === 'fulfilled') {
+          const suggestions = sugRes.value.data?.data?.suggestions || sugRes.value.data?.suggestions || [];
+          const existingIds = new Set(list.map((u) => (u._id || u.id)?.toString()));
+          for (const s of suggestions) {
+            const sid = (s._id || s.id)?.toString();
+            if (sid && !existingIds.has(sid)) {
+              list.push(s);
+              existingIds.add(sid);
+            }
+          }
+        }
+
+        if (isMounted) {
+          setContacts(list);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.warn('Failed to load contacts:', err);
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadContacts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <aside className="hidden lg:flex flex-col w-64 xl:w-72 flex-shrink-0 pl-2">
@@ -46,37 +86,48 @@ export default function RightSidebar() {
               <button className="p-1.5 rounded-full hover:bg-[#E4E6EB] transition-colors" title="New Call">
                 <Video className="w-4 h-4" />
               </button>
-              <button className="p-1.5 rounded-full hover:bg-[#E4E6EB] transition-colors" title="Search Contacts">
+              <Link to="/friends" className="p-1.5 rounded-full hover:bg-[#E4E6EB] transition-colors" title="All Friends">
                 <Search className="w-4 h-4" />
-              </button>
-              <button className="p-1.5 rounded-full hover:bg-[#E4E6EB] transition-colors" title="Options">
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
+              </Link>
             </div>
           </div>
 
           {/* Active Contacts List */}
           <div className="space-y-0.5">
-            {contacts.map((contact) => (
-              <Link
-                key={contact._id}
-                to={`/profile/${contact.username}`}
-                className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-[#E4E6EB] transition-colors group"
-              >
-                <div className="relative">
-                  <Avatar
-                    name={`${contact.firstName} ${contact.lastName}`}
-                    size="sm"
-                  />
-                  {contact.online && (
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#31A24C] border-2 border-white" />
-                  )}
-                </div>
-                <p className="text-[14px] font-semibold text-[#050505] truncate">
-                  {contact.firstName} {contact.lastName}
-                </p>
-              </Link>
-            ))}
+            {loading && contacts.length === 0 ? (
+              <div className="py-4 text-center text-xs text-[#65676B]">Loading contacts...</div>
+            ) : contacts.length === 0 ? (
+              <div className="py-4 text-center text-xs text-[#65676B]">
+                <p>No contacts yet</p>
+                <Link to="/friends" className="text-[#1877F2] font-medium hover:underline mt-1 block">
+                  Find friends
+                </Link>
+              </div>
+            ) : (
+              contacts.map((contact) => (
+                <button
+                  key={contact._id || contact.id}
+                  onClick={() => openChat(contact)}
+                  className="w-full flex items-center justify-between gap-3 px-2 py-2 rounded-xl hover:bg-[#E4E6EB] transition-colors group text-left cursor-pointer"
+                  title={`Chat with ${contact.firstName}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative flex-shrink-0">
+                      <Avatar
+                        src={contact.avatar}
+                        name={`${contact.firstName || ''} ${contact.lastName || ''}`}
+                        size="sm"
+                      />
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#31A24C] border-2 border-white" />
+                    </div>
+                    <p className="text-[14px] font-semibold text-[#050505] truncate">
+                      {contact.firstName} {contact.lastName}
+                    </p>
+                  </div>
+                  <MessageCircle className="w-4 h-4 text-[#65676B] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                </button>
+              ))
+            )}
           </div>
         </div>
       </div>

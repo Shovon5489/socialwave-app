@@ -13,10 +13,12 @@ import toast from 'react-hot-toast';
 import {
   MapPin, Globe, Calendar, Edit3, UserPlus, UserCheck,
   UserX, Camera, Plus, MoreHorizontal, Image as ImageIcon,
-  ShieldCheck, Briefcase, Home as HomeIcon, Edit,
+  ShieldCheck, Briefcase, Home as HomeIcon, Edit, MessageCircle,
 } from 'lucide-react';
+import { useChat } from '../context/ChatContext';
 
 export default function ProfilePage() {
+  const { openChat } = useChat();
   const { username } = useParams();
   const { user: currentUser, updateUser } = useAuth();
   const [profileUser, setProfileUser] = useState(null);
@@ -302,6 +304,14 @@ export default function ProfilePage() {
                         : friendStatus === 'sent'
                         ? 'Request Sent'
                         : 'Add Friend'}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => openChat(profileUser)}
+                      icon={MessageCircle}
+                    >
+                      Message
                     </Button>
                   </>
                 )}

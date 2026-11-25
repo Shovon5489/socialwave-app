@@ -60,6 +60,7 @@ export const userAPI = {
   getFriendRequests: () => api.get('/users/friend-requests'),
   getSuggestedFriends: () => api.get('/users/suggestions'),
   getFriends: () => api.get('/users/friends'),
+  getAllUsers: (page = 1, limit = 50) => api.get(`/users?page=${page}&limit=${limit}`),
   searchUsers: (query) => api.get(`/users?q=${encodeURIComponent(query)}`),
 };
 
@@ -115,6 +116,19 @@ export const searchAPI = {
   searchUsers: (query) => api.get(`/search/users?q=${encodeURIComponent(query)}`),
   searchPosts: (query) => api.get(`/search/posts?q=${encodeURIComponent(query)}`),
   getTrending: () => api.get('/search/trending'),
+};
+
+// ---- Message / Chat API ----
+export const messageAPI = {
+  getConversations: () => api.get('/messages/conversations'),
+  getMessages: (userId) => api.get(`/messages/${userId}`),
+  sendMessage: (formData) =>
+    api.post('/messages', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  sendTextMessage: (recipientId, text) =>
+    api.post('/messages', { recipientId, text }),
+  deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
 };
 
 export default api;

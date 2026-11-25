@@ -5,11 +5,13 @@ import {
   ChevronDown, Menu, X, MessageCircle, Grid, Play,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { searchAPI, notificationAPI } from '../../utils/api';
+import { useChat } from '../../context/ChatContext';
+import { searchAPI, notificationAPI, messageAPI, userAPI } from '../../utils/api';
 import Avatar from '../ui/Avatar';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { openChat } = useChat();
   const navigate = useNavigate();
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -19,8 +21,38 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState({ users: [], posts: [] });
   const [searchLoading, setSearchLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [messengerOpen, setMessengerOpen] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [loadingConversations, setLoadingConversations] = useState(false);
   const dropdownRef = useRef(null);
   const searchContainerRef = useRef(null);
+  const messengerRef = useRef(null);
+
+  const fetchConversations = async () => {
+    try {
+      setLoadingConversations(true);
+      const res = await messageAPI.getConversations();
+      const list = res.data?.data?.conversations || res.data?.conversations || [];
+      if (list.length === 0) {
+        const friRes = await userAPI.getFriends();
+        const friends = friRes.data?.data?.friends || friRes.data?.friends || [];
+        setConversations(friends.map((f) => ({ user: f, lastMessage: null })));
+      } else {
+        setConversations(list);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch conversations:', err);
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
+  const handleToggleMessenger = () => {
+    if (!messengerOpen) {
+      fetchConversations();
+    }
+    setMessengerOpen((prev) => !prev);
+  };
 
   const fetchUnreadCount = async () => {
     try {
@@ -55,6 +87,9 @@ export default function Navbar() {
       }
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
         setSearchDropdownOpen(false);
+      }
+      if (messengerRef.current && !messengerRef.current.contains(e.target)) {
+        setMessengerOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -263,14 +298,80 @@ export default function Navbar() {
               <Grid className="h-5 w-5" />
             </button>
 
-            {/* Messenger button */}
-            <button
-              onClick={() => navigate('/notifications')}
-              className="hidden sm:flex w-10 h-10 rounded-full bg-[#E4E6EB] hover:bg-[#D8DADF] items-center justify-center text-[#050505] transition-colors"
-              title="Messenger"
-            >
-              <MessageCircle className="h-5 w-5" />
-            </button>
+            {/* Messenger button & dropdown */}
+            <div ref={messengerRef} className="relative hidden sm:block">
+              <button
+                onClick={handleToggleMessenger}
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-[#050505] transition-colors cursor-pointer ${
+                  messengerOpen ? 'bg-blue-100 text-[#1877F2]' : 'bg-[#E4E6EB] hover:bg-[#D8DADF]'
+                }`}
+                title="Messenger"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </button>
+
+              {messengerOpen && (
+                <div className="absolute right-0 top-12 w-80 sm:w-88 bg-white rounded-2xl shadow-xl border border-gray-200 py-3 px-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="flex items-center justify-between px-2 pb-2 border-b border-gray-100">
+                    <h3 className="font-bold text-lg text-[#050505]">Chats</h3>
+                    <Link
+                      to="/friends"
+                      onClick={() => setMessengerOpen(false)}
+                      className="text-xs text-[#1877F2] font-semibold hover:underline"
+                    >
+                      All friends
+                    </Link>
+                  </div>
+
+                  <div className="mt-2 max-h-96 overflow-y-auto space-y-1">
+                    {loadingConversations ? (
+                      <div className="py-8 text-center text-xs text-[#65676B]">Loading chats...</div>
+                    ) : conversations.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-[#65676B]">
+                        <p className="font-medium text-sm text-[#050505]">No messages yet</p>
+                        <p className="mt-1">Connect with friends and start chatting!</p>
+                      </div>
+                    ) : (
+                      conversations.map((item) => {
+                        const person = item.user || item;
+                        const lastMsg = item.lastMessage;
+                        return (
+                          <button
+                            key={person._id || person.id}
+                            onClick={() => {
+                              openChat(person);
+                              setMessengerOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-[#F2F2F2] transition-colors text-left cursor-pointer group"
+                          >
+                            <div className="relative flex-shrink-0">
+                              <Avatar
+                                src={person.avatar}
+                                name={`${person.firstName || ''} ${person.lastName || ''}`}
+                                size="md"
+                              />
+                              <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#31A24C] border-2 border-white" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-[#050505] truncate">
+                                {person.firstName} {person.lastName}
+                              </p>
+                              <p className="text-xs text-[#65676B] truncate">
+                                {lastMsg ? (
+                                  lastMsg.media ? (lastMsg.mediaType === 'video' ? '📹 Video' : '📷 Photo') : lastMsg.text
+                                ) : (
+                                  'Start a conversation'
+                                )}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Notification Bell */}
             <Link

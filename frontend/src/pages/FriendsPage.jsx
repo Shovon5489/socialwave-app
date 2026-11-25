@@ -3,10 +3,12 @@ import MainLayout from '../components/layout/MainLayout';
 import FriendCard from '../components/FriendCard';
 import Loader from '../components/ui/Loader';
 import { userAPI } from '../utils/api';
+import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
 
 export default function FriendsPage() {
-  const [activeTab, setActiveTab] = useState('requests');
+  const { user: currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState('suggestions');
   const [requests, setRequests] = useState([]);
   const [friends, setFriends] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
@@ -15,23 +17,57 @@ export default function FriendsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [reqRes, friRes, sugRes] = await Promise.allSettled([
+      const [reqRes, friRes, sugRes, allUsersRes] = await Promise.allSettled([
         userAPI.getFriendRequests(),
         userAPI.getFriends(),
         userAPI.getSuggestedFriends(),
+        userAPI.getAllUsers(1, 100),
       ]);
 
+      let reqData = [];
+      let friData = [];
+      let sugData = [];
+
       if (reqRes.status === 'fulfilled') {
-        const reqData = reqRes.value.data?.data?.requests || reqRes.value.data?.requests || [];
+        reqData = reqRes.value.data?.data?.requests || reqRes.value.data?.requests || [];
         setRequests(reqData);
       }
       if (friRes.status === 'fulfilled') {
-        const friData = friRes.value.data?.data?.friends || friRes.value.data?.friends || [];
+        friData = friRes.value.data?.data?.friends || friRes.value.data?.friends || [];
         setFriends(friData);
       }
       if (sugRes.status === 'fulfilled') {
-        const sugData = sugRes.value.data?.data?.suggestions || sugRes.value.data?.suggestions || [];
-        setSuggestions(sugData);
+        sugData = sugRes.value.data?.data?.suggestions || sugRes.value.data?.suggestions || [];
+      }
+
+      // Merge all other registered users into suggestions if not already in suggestions, friends, or requests
+      const currentUserId = (currentUser?._id || currentUser?.id)?.toString();
+      const friendIds = new Set(friData.map((f) => (f._id || f.id || f).toString()));
+      const reqFromIds = new Set(reqData.map((r) => (r.from?._id || r.from?.id || r.from || r._id).toString()));
+      const existingSugIds = new Set(sugData.map((s) => (s._id || s.id || s).toString()));
+
+      if (allUsersRes.status === 'fulfilled') {
+        const allUsers = allUsersRes.value.data?.data?.users || allUsersRes.value.data?.users || [];
+        const additional = allUsers.filter((u) => {
+          const uId = (u._id || u.id)?.toString();
+          return (
+            uId &&
+            uId !== currentUserId &&
+            !friendIds.has(uId) &&
+            !existingSugIds.has(uId) &&
+            !reqFromIds.has(uId)
+          );
+        });
+        sugData = [...sugData, ...additional];
+      }
+
+      setSuggestions(sugData);
+
+      // Smart default tab: if there are pending requests, show them; otherwise show suggestions
+      if (reqData.length > 0) {
+        setActiveTab('requests');
+      } else {
+        setActiveTab('suggestions');
       }
     } catch (err) {
       console.error('Error fetching friends data:', err);
@@ -43,7 +79,7 @@ export default function FriendsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentUser?._id]);
 
   const handleAction = (action, userId) => {
     if (action === 'accepted') {

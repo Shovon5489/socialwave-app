@@ -1,6 +1,7 @@
 import Navbar from './Navbar';
 import LeftSidebar from './LeftSidebar';
 import RightSidebar from './RightSidebar';
+import ChatContainer from '../chat/ChatContainer';
 
 export default function MainLayout({
   children,
@@ -25,6 +26,7 @@ export default function MainLayout({
           </div>
         )}
       </div>
+      <ChatContainer />
     </div>
   );
 }

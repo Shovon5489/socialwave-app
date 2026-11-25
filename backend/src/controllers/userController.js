@@ -478,19 +478,21 @@ const getFollowing = async (req, res, next) => {
  */
 const getSuggestedUsers = async (req, res, next) => {
   try {
-    const currentUser = await User.findById(req.user.id).select('friends following blockedUsers');
+    const currentUser = await User.findById(req.user.id).select('friends blockedUsers');
 
     const exclude = new Set([
-      req.user.id,
-      ...currentUser.friends.map((id) => id.toString()),
-      ...currentUser.following.map((id) => id.toString()),
-      ...currentUser.blockedUsers.map((id) => id.toString()),
+      req.user.id.toString(),
+      ...((currentUser?.friends || []).map((id) => (id._id || id).toString())),
+      ...((currentUser?.blockedUsers || []).map((id) => (id._id || id).toString())),
     ]);
 
-    const suggestions = await User.find({ _id: { $nin: Array.from(exclude) }, isActive: true })
+    const suggestions = await User.find({
+      _id: { $nin: Array.from(exclude) },
+      isActive: { $ne: false },
+    })
       .select(USER_BASIC_FIELDS + ' bio location followingCount followerCount')
       .sort({ createdAt: -1 })
-      .limit(10);
+      .limit(50);
 
     return res.status(200).json({
       success: true,
@@ -508,41 +510,37 @@ const getSuggestedUsers = async (req, res, next) => {
  */
 const searchUsers = async (req, res, next) => {
   try {
-    const query = req.query.q || '';
+    const query = (req.query.q || '').trim();
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const limit = Math.min(100, parseInt(req.query.limit) || 50);
     const skip = (page - 1) * limit;
 
-    if (!query.trim()) {
-      return res.status(400).json({ success: false, message: 'Search query is required' });
+    let filter = { isActive: { $ne: false } };
+
+    if (query) {
+      const words = query.split(/\s+/).filter(Boolean);
+      const orConditions = [
+        { username: { $regex: query, $options: 'i' } },
+        { firstName: { $regex: query, $options: 'i' } },
+        { lastName: { $regex: query, $options: 'i' } },
+      ];
+
+      if (words.length > 1) {
+        orConditions.push({
+          $and: words.map((w) => ({
+            $or: [
+              { firstName: { $regex: w, $options: 'i' } },
+              { lastName: { $regex: w, $options: 'i' } },
+              { username: { $regex: w, $options: 'i' } },
+            ],
+          })),
+        });
+      }
+      filter.$or = orConditions;
     }
-
-    const words = query.trim().split(/\s+/).filter(Boolean);
-    const orConditions = [
-      { username: { $regex: query.trim(), $options: 'i' } },
-      { firstName: { $regex: query.trim(), $options: 'i' } },
-      { lastName: { $regex: query.trim(), $options: 'i' } },
-    ];
-
-    if (words.length > 1) {
-      orConditions.push({
-        $and: words.map((w) => ({
-          $or: [
-            { firstName: { $regex: w, $options: 'i' } },
-            { lastName: { $regex: w, $options: 'i' } },
-            { username: { $regex: w, $options: 'i' } },
-          ],
-        })),
-      });
-    }
-
-    const filter = {
-      $or: orConditions,
-      isActive: { $ne: false },
-    };
 
     const [users, total] = await Promise.all([
-      User.find(filter).select(USER_BASIC_FIELDS + ' bio location').skip(skip).limit(limit),
+      User.find(filter).select(USER_BASIC_FIELDS + ' bio location').sort({ createdAt: -1 }).skip(skip).limit(limit),
       User.countDocuments(filter),
     ]);
 

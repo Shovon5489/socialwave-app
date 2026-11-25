@@ -89,8 +89,8 @@ const uploadPost = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB (covers both image and video)
 }).array('media', 10);
 
-/** Upload a single media file for a story (field name: 'media') */
-const uploadStory = multer({
+/** Upload a single media file for a story or chat message (field name: 'media') */
+const uploadMediaSingle = multer({
   storage,
   fileFilter,
   limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
@@ -120,5 +120,6 @@ module.exports = {
   uploadAvatar: handleUpload(uploadAvatar),
   uploadCover: handleUpload(uploadCover),
   uploadPost: handleUpload(uploadPost),
-  uploadStory: handleUpload(uploadStory),
+  uploadStory: handleUpload(uploadMediaSingle),
+  uploadMessage: handleUpload(uploadMediaSingle),
 };

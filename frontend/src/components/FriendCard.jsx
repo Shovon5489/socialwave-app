@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UserPlus, UserCheck, UserX, Users } from 'lucide-react';
+import { UserPlus, UserCheck, UserX, Users, MessageCircle } from 'lucide-react';
 import Avatar from './ui/Avatar';
 import Button from './ui/Button';
 import { userAPI } from '../utils/api';
+import { useChat } from '../context/ChatContext';
 import toast from 'react-hot-toast';
 
 export default function FriendCard({ user: person, type = 'suggestion', onAction }) {
+  const { openChat } = useChat();
   const [status, setStatus] = useState(type); // suggestion | request | friend | pending
   const [loading, setLoading] = useState(false);
 
@@ -157,15 +159,26 @@ export default function FriendCard({ user: person, type = 'suggestion', onAction
             </div>
           )}
           {status === 'friend' && (
-            <Button
-              fullWidth
-              size="sm"
-              variant="light"
-              onClick={handleRemoveFriend}
-              loading={loading}
-            >
-              Friends ✓
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                fullWidth
+                size="sm"
+                variant="primary"
+                onClick={() => openChat(person)}
+                leftIcon={MessageCircle}
+              >
+                Message
+              </Button>
+              <Button
+                size="sm"
+                variant="light"
+                onClick={handleRemoveFriend}
+                loading={loading}
+                title="Remove Friend"
+              >
+                ✓
+              </Button>
+            </div>
           )}
         </div>
       </div>
