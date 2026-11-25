@@ -19,6 +19,17 @@ const replySchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    // Facebook-style reactions: { user, type }
+    reactions: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        type: {
+          type: String,
+          enum: ['like', 'love', 'haha', 'wow', 'sad', 'angry'],
+          default: 'like',
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -40,6 +51,17 @@ const commentSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+      },
+    ],
+    // Facebook-style reactions: { user, type }
+    reactions: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        type: {
+          type: String,
+          enum: ['like', 'love', 'haha', 'wow', 'sad', 'angry'],
+          default: 'like',
+        },
       },
     ],
     replies: [replySchema],
@@ -96,6 +118,17 @@ const postSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    // Facebook-style reactions: { user, type }
+    reactions: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        type: {
+          type: String,
+          enum: ['like', 'love', 'haha', 'wow', 'sad', 'angry'],
+          default: 'like',
+        },
+      },
+    ],
     comments: [commentSchema],
     shares: [
       {
@@ -142,9 +175,11 @@ const postSchema = new mongoose.Schema(
   }
 );
 
-// Virtual: likeCount
+// Virtual: likeCount (total reactions including old likes)
 postSchema.virtual('likeCount').get(function () {
-  return this.likes ? this.likes.length : 0;
+  const reactionCount = this.reactions ? this.reactions.length : 0;
+  const legacyLikes = this.likes ? this.likes.length : 0;
+  return reactionCount > 0 ? reactionCount : legacyLikes;
 });
 
 // Virtual: commentCount

@@ -10,6 +10,7 @@ const {
   deletePost,
   likePost,
   unlikePost,
+  reactPost,
   addComment,
   deleteComment,
   likeComment,
@@ -37,9 +38,10 @@ router.get('/:id', getPost);
 router.put('/:id', protect, updatePost);
 router.delete('/:id', protect, deletePost);
 
-// ── Likes ──────────────────────────────────────────────────────────────────
+// ── Likes & Reactions ──────────────────────────────────────────────────────
 router.post('/:id/like', protect, likePost);
 router.delete('/:id/like', protect, unlikePost);
+router.post('/:id/react', protect, reactPost);
 
 // ── Comments ───────────────────────────────────────────────────────────────
 router.post('/:id/comment', protect, addComment);

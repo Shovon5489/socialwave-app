@@ -20,6 +20,17 @@ function PrivacyIcon({ privacy }) {
   return <Lock className="h-3 w-3" />;
 }
 
+const REACTIONS = [
+  { type: 'like', emoji: '👍', label: 'Like', color: 'text-[#1877F2]', bg: 'bg-[#1877F2]' },
+  { type: 'love', emoji: '❤️', label: 'Love', color: 'text-[#F33E58]', bg: 'bg-[#F33E58]' },
+  { type: 'haha', emoji: '😂', label: 'Haha', color: 'text-[#F7B125]', bg: 'bg-[#F7B125]' },
+  { type: 'wow', emoji: '😮', label: 'Wow', color: 'text-[#F7B125]', bg: 'bg-[#F7B125]' },
+  { type: 'sad', emoji: '😢', label: 'Sad', color: 'text-[#F7B125]', bg: 'bg-[#F7B125]' },
+  { type: 'angry', emoji: '😡', label: 'Angry', color: 'text-[#E9710F]', bg: 'bg-[#E9710F]' },
+];
+
+const REACTION_MAP = Object.fromEntries(REACTIONS.map((r) => [r.type, r]));
+
 function MediaGrid({ media }) {
   const [failedIndices, setFailedIndices] = useState(new Set());
   if (!media || media.length === 0) return null;
@@ -229,8 +240,22 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [post, setPost] = useState(initialPost);
-  const [liked, setLiked] = useState(post.likes?.includes(user?._id) || false);
-  const [likeCount, setLikeCount] = useState(post.likes?.length || 0);
+
+  const initialUserReaction = (() => {
+    const uid = (user?._id || user?.id)?.toString();
+    if (!uid) return null;
+    const found = post.reactions?.find((r) => (r.user?._id || r.user)?.toString() === uid);
+    if (found) return found.type;
+    if (post.likes?.some((id) => (id?._id || id)?.toString() === uid)) return 'like';
+    return null;
+  })();
+
+  const [reactions, setReactions] = useState(post.reactions || []);
+  const [userReaction, setUserReaction] = useState(initialUserReaction);
+  const [likeCount, setLikeCount] = useState(
+    (post.reactions?.length || 0) > 0 ? post.reactions.length : (post.likes?.length || 0)
+  );
+  const [showReactions, setShowReactions] = useState(false);
   const [likeAnimating, setLikeAnimating] = useState(false);
   const [saved, setSaved] = useState(post.saved || false);
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -241,29 +266,106 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
   const [shareText, setShareText] = useState('');
   const [loading, setLoading] = useState(false);
   const menuRef = useRef(null);
+  const reactionBoxRef = useRef(null);
+  const hoverTimerRef = useRef(null);
+  const leaveTimerRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+  const longPressTriggeredRef = useRef(false);
   const isOwner = user?._id === (post.author?._id || post.author);
 
   useEffect(() => {
     function handleClickOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+      if (reactionBoxRef.current && !reactionBoxRef.current.contains(e.target)) setShowReactions(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      clearTimeout(hoverTimerRef.current);
+      clearTimeout(leaveTimerRef.current);
+      clearTimeout(longPressTimerRef.current);
+    };
   }, []);
 
-  const handleLike = async () => {
+  const handleReact = async (type) => {
+    setShowReactions(false);
     setLikeAnimating(true);
     setTimeout(() => setLikeAnimating(false), 300);
-    const wasLiked = liked;
-    setLiked(!wasLiked);
-    setLikeCount((c) => (wasLiked ? c - 1 : c + 1));
-    try {
-      if (wasLiked) await postAPI.unlikePost(post._id);
-      else await postAPI.likePost(post._id);
-    } catch {
-      setLiked(wasLiked);
-      setLikeCount((c) => (wasLiked ? c + 1 : c - 1));
+
+    const prevReaction = userReaction;
+    const prevReactions = reactions;
+    const prevCount = likeCount;
+    const uid = (user?._id || user?.id)?.toString();
+
+    const isToggleOff = prevReaction === type;
+    const nextReaction = isToggleOff ? null : type;
+
+    setUserReaction(nextReaction);
+    if (isToggleOff) {
+      setReactions((prev) => prev.filter((r) => (r.user?._id || r.user)?.toString() !== uid));
+      setLikeCount((c) => Math.max(0, c - 1));
+    } else if (prevReaction) {
+      setReactions((prev) => {
+        const exists = prev.some((r) => (r.user?._id || r.user)?.toString() === uid);
+        if (exists) {
+          return prev.map((r) => ((r.user?._id || r.user)?.toString() === uid ? { ...r, type } : r));
+        }
+        return [...prev, { user: uid, type }];
+      });
+    } else {
+      setReactions((prev) => [...prev, { user: uid, type }]);
+      setLikeCount((c) => c + 1);
     }
+
+    try {
+      const res = await postAPI.reactPost(post._id, type);
+      const data = res.data?.data;
+      if (data) {
+        if (Array.isArray(data.reactions)) setReactions(data.reactions);
+        if (typeof data.totalReactions === 'number') setLikeCount(data.totalReactions);
+        if (data.userReaction !== undefined) setUserReaction(data.userReaction);
+      }
+    } catch {
+      setUserReaction(prevReaction);
+      setReactions(prevReactions);
+      setLikeCount(prevCount);
+    }
+  };
+
+  const handleLikeButtonClick = () => {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+    // If already reacted with any reaction, clicking removes it; otherwise adds 'like'
+    handleReact(userReaction || 'like');
+  };
+
+  const handleReactionMouseEnter = () => {
+    clearTimeout(leaveTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      setShowReactions(true);
+    }, 300);
+  };
+
+  const handleReactionMouseLeave = () => {
+    clearTimeout(hoverTimerRef.current);
+    leaveTimerRef.current = setTimeout(() => {
+      setShowReactions(false);
+    }, 300);
+  };
+
+  const handlePressStart = () => {
+    longPressTriggeredRef.current = false;
+    clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setShowReactions(true);
+    }, 380);
+  };
+
+  const handlePressEnd = () => {
+    clearTimeout(longPressTimerRef.current);
   };
 
   const handleSave = async () => {
@@ -402,19 +504,34 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
         {(likeCount > 0 || comments.length > 0 || (post.shares?.length || 0) > 0) && (
           <div className="flex items-center justify-between px-4 py-2 mt-2 text-xs text-[#65676B] border-t border-gray-100">
             <button className="flex items-center gap-1.5 hover:underline" onClick={() => setCommentsOpen(!commentsOpen)}>
-              {likeCount > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="flex items-center -space-x-1">
-                    <span className="w-5 h-5 rounded-full bg-[#1877F2] flex items-center justify-center text-white text-[11px] shadow-sm">
-                      👍
-                    </span>
-                    <span className="w-5 h-5 rounded-full bg-[#FA383E] flex items-center justify-center text-white text-[11px] shadow-sm">
-                      ❤️
-                    </span>
+              {likeCount > 0 && (() => {
+                const counts = {};
+                for (const r of reactions) {
+                  counts[r.type] = (counts[r.type] || 0) + 1;
+                }
+                const topTypes = Object.entries(counts)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 3)
+                  .map(([t]) => REACTION_MAP[t])
+                  .filter(Boolean);
+                const badges = topTypes.length > 0 ? topTypes : [REACTION_MAP.like];
+
+                return (
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center -space-x-1">
+                      {badges.map((b) => (
+                        <span
+                          key={b.type}
+                          className={`w-5 h-5 rounded-full ${b.bg} flex items-center justify-center text-white text-[11px] shadow-sm ring-1 ring-white`}
+                        >
+                          {b.emoji}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-[13px] font-normal text-[#65676B]">{formatNumber(likeCount)}</span>
                   </div>
-                  <span className="text-[13px] font-normal text-[#65676B]">{formatNumber(likeCount)}</span>
-                </div>
-              )}
+                );
+              })()}
             </button>
             <div className="flex items-center gap-3">
               {comments.length > 0 && (
@@ -429,20 +546,66 @@ export default function PostCard({ post: initialPost, onDelete, onUpdate }) {
           </div>
         )}
 
-        {/* Action Bar (Facebook Like, Comment, Share) */}
+        {/* Action Bar (Facebook Like with Reactions Picker, Comment, Share) */}
         <div className="flex items-center border-t border-[#CED0D4]/60 mx-3 py-1">
-          <button
-            onClick={handleLike}
-            className={`
-              flex-1 flex items-center justify-center gap-2 py-2 text-[14px] font-semibold rounded-lg transition-colors
-              ${liked ? 'text-[#1877F2]' : 'text-[#65676B] hover:bg-[#F2F2F2]'}
-            `}
+          <div
+            ref={reactionBoxRef}
+            className="relative flex-1"
+            onMouseEnter={handleReactionMouseEnter}
+            onMouseLeave={handleReactionMouseLeave}
           >
-            <ThumbsUp
-              className={`h-5 w-5 transition-transform ${likeAnimating ? 'animate-like-pulse' : ''} ${liked ? 'fill-[#1877F2]' : ''}`}
-            />
-            <span>Like</span>
-          </button>
+            {/* Floating Facebook Reaction Picker */}
+            {showReactions && (
+              <div
+                onMouseEnter={() => clearTimeout(leaveTimerRef.current)}
+                onMouseLeave={handleReactionMouseLeave}
+                className="absolute bottom-full left-0 mb-2 z-50 bg-white rounded-full shadow-2xl border border-gray-200 px-2 py-1.5 flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150"
+              >
+                {REACTIONS.map((r) => (
+                  <button
+                    key={r.type}
+                    type="button"
+                    onClick={() => handleReact(r.type)}
+                    title={r.label}
+                    className="group relative w-10 h-10 flex items-center justify-center text-[26px] rounded-full hover:scale-125 hover:-translate-y-1.5 transition-all duration-150 cursor-pointer"
+                  >
+                    <span>{r.emoji}</span>
+                    <span className="pointer-events-none opacity-0 group-hover:opacity-100 absolute -top-7 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap transition-opacity">
+                      {r.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleLikeButtonClick}
+              onMouseDown={handlePressStart}
+              onMouseUp={handlePressEnd}
+              onTouchStart={handlePressStart}
+              onTouchEnd={handlePressEnd}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setShowReactions(true);
+              }}
+              className={`
+                w-full flex items-center justify-center gap-2 py-2 text-[14px] font-semibold rounded-lg transition-colors select-none cursor-pointer
+                ${userReaction ? REACTION_MAP[userReaction]?.color || 'text-[#1877F2]' : 'text-[#65676B] hover:bg-[#F2F2F2]'}
+              `}
+            >
+              {userReaction && userReaction !== 'like' ? (
+                <span className={`text-lg leading-none transition-transform ${likeAnimating ? 'scale-125' : ''}`}>
+                  {REACTION_MAP[userReaction]?.emoji}
+                </span>
+              ) : (
+                <ThumbsUp
+                  className={`h-5 w-5 transition-transform ${likeAnimating ? 'animate-like-pulse' : ''} ${userReaction === 'like' ? 'fill-[#1877F2]' : ''}`}
+                />
+              )}
+              <span>{userReaction ? REACTION_MAP[userReaction]?.label : 'Like'}</span>
+            </button>
+          </div>
           <button
             onClick={() => setCommentsOpen(!commentsOpen)}
             className="flex-1 flex items-center justify-center gap-2 py-2 text-[14px] font-semibold text-[#65676B] hover:bg-[#F2F2F2] rounded-lg transition-colors"

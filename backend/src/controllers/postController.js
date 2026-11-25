@@ -332,9 +332,89 @@ const unlikePost = async (req, res, next) => {
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
 
     post.likes = post.likes.filter((id) => id.toString() !== req.user.id);
+    // Also remove from reactions array
+    if (post.reactions) {
+      post.reactions = post.reactions.filter((r) => r.user.toString() !== req.user.id);
+    }
     await post.save();
 
-    return res.status(200).json({ success: true, message: 'Post unliked', data: { likeCount: post.likes.length } });
+    return res.status(200).json({ success: true, message: 'Post unliked', data: { likeCount: post.reactions?.length || post.likes.length, reactions: post.reactions || [] } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   POST /api/posts/:id/react
+ * @access  Protected
+ * @body    { type: 'like'|'love'|'haha'|'wow'|'sad'|'angry' }
+ */
+const reactPost = async (req, res, next) => {
+  try {
+    const { type } = req.body;
+    const validTypes = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
+    const reactionType = validTypes.includes(type) ? type : 'like';
+
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+
+    if (!post.reactions) post.reactions = [];
+
+    const existingIdx = post.reactions.findIndex((r) => r.user.toString() === req.user.id);
+
+    let removed = false;
+    if (existingIdx !== -1) {
+      if (post.reactions[existingIdx].type === reactionType) {
+        // Same reaction — toggle off (remove)
+        post.reactions.splice(existingIdx, 1);
+        removed = true;
+      } else {
+        // Different reaction — update type
+        post.reactions[existingIdx].type = reactionType;
+      }
+    } else {
+      // New reaction
+      post.reactions.push({ user: req.user.id, type: reactionType });
+    }
+
+    // Keep legacy likes array in sync (any reaction counts as liked)
+    if (removed) {
+      post.likes = post.likes.filter((id) => id.toString() !== req.user.id);
+    } else if (!post.likes.includes(req.user.id)) {
+      post.likes.push(req.user.id);
+    }
+
+    await post.save();
+
+    // Notify post author on new reaction (not removals or self-reactions)
+    if (!removed && post.author.toString() !== req.user.id) {
+      const reactor = await User.findById(req.user.id).select('firstName username');
+      const emojiMap = { like: '👍', love: '❤️', haha: '😂', wow: '😮', sad: '😢', angry: '😡' };
+      await createNotification({
+        recipient: post.author,
+        sender: req.user.id,
+        type: 'like',
+        post: post._id,
+        message: `${reactor.firstName || reactor.username} reacted ${emojiMap[reactionType]} to your post`,
+      });
+    }
+
+    // Build reaction summary counts
+    const reactionSummary = {};
+    for (const r of post.reactions) {
+      reactionSummary[r.type] = (reactionSummary[r.type] || 0) + 1;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: removed ? 'Reaction removed' : 'Reacted to post',
+      data: {
+        reactions: post.reactions,
+        reactionSummary,
+        totalReactions: post.reactions.length,
+        userReaction: removed ? null : reactionType,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -669,6 +749,7 @@ module.exports = {
   deletePost,
   likePost,
   unlikePost,
+  reactPost,
   addComment,
   deleteComment,
   likeComment,

@@ -75,6 +75,7 @@ export const postAPI = {
   deletePost: (postId) => api.delete(`/posts/${postId}`),
   likePost: (postId) => api.post(`/posts/${postId}/like`),
   unlikePost: (postId) => api.delete(`/posts/${postId}/like`),
+  reactPost: (postId, type) => api.post(`/posts/${postId}/react`, { type }),
   sharePost: (postId, content) => api.post(`/posts/${postId}/share`, { content }),
   addComment: (postId, content) => api.post(`/posts/${postId}/comment`, { content }),
   deleteComment: (postId, commentId) =>
