@@ -126,7 +126,7 @@ export default function LoginPage() {
             <span>Sign Up</span>
             <span>Log In</span>
             <span>Messenger</span>
-            <span>Facebook Lite</span>
+            <span>SocialWave Lite</span>
             <span>Video</span>
             <span>Places</span>
             <span>Games</span>

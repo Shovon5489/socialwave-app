@@ -11,8 +11,8 @@ import MediaUpload from './ui/MediaUpload';
 import toast from 'react-hot-toast';
 
 const privacyOptions = [
-  { value: 'public', label: 'Public', icon: Globe, desc: 'Anyone on or off Facebook' },
-  { value: 'friends', label: 'Friends', icon: Users, desc: 'Your friends on Facebook' },
+  { value: 'public', label: 'Public', icon: Globe, desc: 'Anyone on or off SocialWave' },
+  { value: 'friends', label: 'Friends', icon: Users, desc: 'Your friends on SocialWave' },
   { value: 'private', label: 'Only me', icon: Lock, desc: 'Only you can see this' },
 ];
 

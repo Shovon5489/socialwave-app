@@ -27,7 +27,7 @@ export default function RightSidebar() {
             className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#E4E6EB] transition-colors group"
           >
             <div className="w-24 h-16 rounded-lg bg-gradient-to-tr from-[#1877F2] to-blue-700 flex items-center justify-center text-white font-bold text-xs p-2 text-center shadow-sm">
-              SocialWave Facebook
+              SocialWave
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-[13px] text-[#050505] truncate group-hover:underline">

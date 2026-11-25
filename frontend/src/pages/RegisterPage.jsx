@@ -47,7 +47,7 @@ export default function RegisterPage() {
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
       });
-      toast.success('Account created! Welcome to Facebook!');
+      toast.success('Account created! Welcome to SocialWave!');
       navigate('/feed');
     } catch (err) {
       toast.error(err.message || 'Registration failed. Try a different email.');
@@ -140,7 +140,7 @@ export default function RegisterPage() {
             </div>
 
             <p className="text-[11px] text-[#777] leading-relaxed pt-1">
-              People who use our service may have uploaded your contact information to Facebook.{' '}
+              People who use our service may have uploaded your contact information to SocialWave.{' '}
               <a href="#" className="text-[#385898]">Learn more</a>.
             </p>
 
