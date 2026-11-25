@@ -540,19 +540,22 @@ function StoryViewerModal({ stories, initialIndex, onClose, onDeleteStory }) {
         </div>
 
         {/* Navigation Buttons */}
-        <button
-          onClick={handlePrev}
-          className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors z-20 cursor-pointer"
-          disabled={currentIndex === 0}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <button
-          onClick={handleNext}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors z-20 cursor-pointer"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
+        {stories.length > 1 && currentIndex > 0 && (
+          <button
+            onClick={handlePrev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors z-20 cursor-pointer"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        )}
+        {stories.length > 1 && currentIndex < stories.length - 1 && (
+          <button
+            onClick={handleNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors z-20 cursor-pointer"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -617,6 +620,7 @@ export default function StoryBar() {
   const [stories, setStories] = useState(DEFAULT_STORIES);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [activeStoryList, setActiveStoryList] = useState([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [pickedFile, setPickedFile] = useState(null);
   const [pickedPreview, setPickedPreview] = useState(null);
@@ -699,8 +703,28 @@ export default function StoryBar() {
     e.target.value = '';
   };
 
-  const handleViewStory = (index) => {
-    setViewerIndex(index);
+  const handleViewStory = (story) => {
+    const authorId =
+      story?.author?._id ||
+      story?.author?.id ||
+      story?.author?.username ||
+      story?._id;
+
+    // Filter stories belonging strictly to this author
+    const authorStories = stories.filter((s) => {
+      const sAuthorId =
+        s?.author?._id ||
+        s?.author?.id ||
+        s?.author?.username ||
+        s?._id;
+      return sAuthorId === authorId;
+    });
+
+    const listToView = authorStories.length > 0 ? authorStories : [story];
+    const initialIndex = listToView.findIndex((s) => s._id === story._id);
+
+    setActiveStoryList(listToView);
+    setViewerIndex(initialIndex >= 0 ? initialIndex : 0);
     setViewerOpen(true);
   };
 
@@ -721,6 +745,7 @@ export default function StoryBar() {
     } catch (_) {}
 
     setStories((prev) => prev.filter((s) => s._id !== storyId));
+    setActiveStoryList((prev) => prev.filter((s) => s._id !== storyId));
     setViewerOpen(false);
     toast.success('Story deleted');
   };
@@ -782,7 +807,7 @@ export default function StoryBar() {
           <StoryCard
             key={story._id || index}
             story={story}
-            onClick={() => handleViewStory(index)}
+            onClick={() => handleViewStory(story)}
           />
         ))}
       </div>
@@ -800,12 +825,15 @@ export default function StoryBar() {
         initialPreview={pickedPreview}
       />
 
-      {/* Story Viewer Modal */}
+      {/* Story Viewer Modal - Displays ONLY the stories belonging to the selected author */}
       {viewerOpen && (
         <StoryViewerModal
-          stories={stories}
+          stories={activeStoryList}
           initialIndex={viewerIndex}
-          onClose={() => setViewerOpen(false)}
+          onClose={() => {
+            setViewerOpen(false);
+            setActiveStoryList([]);
+          }}
           onDeleteStory={handleDeleteStory}
         />
       )}
