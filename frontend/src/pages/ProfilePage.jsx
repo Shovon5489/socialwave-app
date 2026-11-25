@@ -193,7 +193,8 @@ export default function ProfilePage() {
               <>
                 <button
                   onClick={() => coverInputRef.current?.click()}
-                  className="absolute bottom-4 right-4 bg-white/95 hover:bg-white text-[#050505] text-[13px] sm:text-[14px] font-semibold px-3 sm:px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all hover:scale-[1.02]"
+                  className="absolute top-4 right-4 bg-white/90 hover:bg-white text-[#050505] text-[13px] sm:text-[14px] font-semibold px-3 sm:px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all hover:scale-[1.02] z-10 backdrop-blur-sm"
+                  title="Edit cover photo"
                 >
                   <Camera className="w-4 h-4 text-[#050505]" />
                   <span>Edit cover photo</span>
