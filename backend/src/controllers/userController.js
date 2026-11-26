@@ -160,22 +160,40 @@ const sendFriendRequest = async (req, res, next) => {
     if (!target) return res.status(404).json({ success: false, message: 'User not found' });
 
     // Already friends
-    if (sender.friends.includes(targetId)) {
+    if (sender.friends.some((id) => id.toString() === targetId)) {
       return res.status(400).json({ success: false, message: 'You are already friends' });
     }
 
-    // Already sent
-    if (sender.sentFriendRequests.includes(targetId)) {
+    // Already sent — also repair target.friendRequests if it was missing
+    if (sender.sentFriendRequests.some((id) => id.toString() === targetId)) {
+      const targetHasReq = target.friendRequests.some((r) => r.from.toString() === senderId);
+      if (!targetHasReq) {
+        target.friendRequests.push({ from: senderId });
+        await target.save();
+        await createNotification({
+          recipient: targetId,
+          sender: senderId,
+          type: 'friend_request',
+          message: `${sender.firstName || sender.username} sent you a friend request`,
+        });
+      }
       return res.status(400).json({ success: false, message: 'Friend request already sent' });
     }
 
+    // Target already sent a request to sender
+    if (sender.friendRequests.some((r) => r.from.toString() === targetId)) {
+      return res.status(400).json({ success: false, message: 'This user already sent you a friend request' });
+    }
+
     // Blocked
-    if (target.blockedUsers.includes(senderId)) {
+    if (target.blockedUsers.some((id) => id.toString() === senderId)) {
       return res.status(403).json({ success: false, message: 'Unable to send friend request' });
     }
 
     sender.sentFriendRequests.push(targetId);
-    target.friendRequests.push({ from: senderId });
+    if (!target.friendRequests.some((r) => r.from.toString() === senderId)) {
+      target.friendRequests.push({ from: senderId });
+    }
 
     await Promise.all([sender.save(), target.save()]);
 
@@ -478,7 +496,9 @@ const getFollowing = async (req, res, next) => {
  */
 const getSuggestedUsers = async (req, res, next) => {
   try {
-    const currentUser = await User.findById(req.user.id).select('friends blockedUsers');
+    const currentUser = await User.findById(req.user.id).select(
+      'friends blockedUsers sentFriendRequests friendRequests'
+    );
 
     const exclude = new Set([
       req.user.id.toString(),
@@ -486,13 +506,27 @@ const getSuggestedUsers = async (req, res, next) => {
       ...((currentUser?.blockedUsers || []).map((id) => (id._id || id).toString())),
     ]);
 
-    const suggestions = await User.find({
+    const sentSet = new Set(
+      (currentUser?.sentFriendRequests || []).map((id) => (id._id || id).toString())
+    );
+    const receivedSet = new Set(
+      (currentUser?.friendRequests || []).map((r) => (r.from?._id || r.from)?.toString())
+    );
+
+    const users = await User.find({
       _id: { $nin: Array.from(exclude) },
       isActive: { $ne: false },
     })
       .select(USER_BASIC_FIELDS + ' bio location followingCount followerCount')
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(50)
+      .lean();
+
+    const suggestions = users.map((u) => ({
+      ...u,
+      requestSent: sentSet.has(u._id.toString()),
+      requestReceived: receivedSet.has(u._id.toString()),
+    }));
 
     return res.status(200).json({
       success: true,

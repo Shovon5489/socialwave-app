@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { UserPlus, UserCheck, UserX, Users, MessageCircle } from 'lucide-react';
 import Avatar from './ui/Avatar';
@@ -12,6 +12,10 @@ export default function FriendCard({ user: person, type = 'suggestion', onAction
   const [status, setStatus] = useState(type); // suggestion | request | friend | pending
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    setStatus(type);
+  }, [type]);
+
   const handleAddFriend = async () => {
     setLoading(true);
     try {
@@ -20,7 +24,11 @@ export default function FriendCard({ user: person, type = 'suggestion', onAction
       toast.success(`Friend request sent to ${person.firstName}!`);
       onAction?.('sent', person._id);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send request');
+      const msg = err.response?.data?.message || 'Failed to send request';
+      if (msg.toLowerCase().includes('already sent')) {
+        setStatus('pending');
+      }
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -71,6 +79,7 @@ export default function FriendCard({ user: person, type = 'suggestion', onAction
     try {
       await userAPI.cancelFriendRequest(person._id);
       setStatus('suggestion');
+      toast.success('Friend request cancelled');
       onAction?.('cancelled', person._id);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to cancel request');
@@ -131,8 +140,9 @@ export default function FriendCard({ user: person, type = 'suggestion', onAction
               variant="light"
               onClick={handleCancelRequest}
               loading={loading}
+              leftIcon={UserX}
             >
-              Request Sent
+              Cancel Request
             </Button>
           )}
           {status === 'request' && (

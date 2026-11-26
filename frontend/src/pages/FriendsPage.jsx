@@ -197,14 +197,20 @@ export default function FriendsPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {suggestions.map((user) => (
-                      <FriendCard
-                        key={user._id}
-                        user={user}
-                        type="suggestion"
-                        onAction={handleAction}
-                      />
-                    ))}
+                    {suggestions.map((user) => {
+                      const sentSet = new Set(
+                        (currentUser?.sentFriendRequests || []).map((id) => (id?._id || id).toString())
+                      );
+                      const isPending = user.requestSent || sentSet.has((user._id || user.id)?.toString());
+                      return (
+                        <FriendCard
+                          key={user._id}
+                          user={user}
+                          type={isPending ? 'pending' : 'suggestion'}
+                          onAction={handleAction}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>

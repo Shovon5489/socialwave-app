@@ -54,6 +54,7 @@ export const userAPI = {
   sendFriendRequest: (userId) => api.post(`/users/friend-request/${userId}`),
   acceptFriendRequest: (userId) => api.put(`/users/friend-request/${userId}/accept`),
   declineFriendRequest: (userId) => api.delete(`/users/friend-request/${userId}`),
+  cancelFriendRequest: (userId) => api.delete(`/users/friend-request/${userId}`),
   removeFriend: (userId) => api.delete(`/users/unfriend/${userId}`),
   followUser: (userId) => api.post(`/users/follow/${userId}`),
   unfollowUser: (userId) => api.delete(`/users/unfollow/${userId}`),
