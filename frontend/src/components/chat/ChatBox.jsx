@@ -94,7 +94,6 @@ export default function ChatBox({ chat, onClose, onToggleMinimize, offsetIndex =
     setInputText('');
     setMediaFile(null);
     setMediaPreview(null);
-    setShowEmojiPicker(false);
 
     // Optimistic UI update
     const optimisticMessage = {
@@ -326,24 +325,26 @@ export default function ChatBox({ chat, onClose, onToggleMinimize, offsetIndex =
       {/* Input Bar */}
       <form
         onSubmit={handleSendMessage}
-        className="p-2.5 bg-white border-t border-gray-200 flex items-center gap-1.5"
+        className="p-2 bg-white border-t border-gray-200 flex items-center gap-1"
       >
         {/* Photo/Video Picker Button */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="p-2 rounded-full text-[#1877F2] hover:bg-[#EBF3FE] transition-colors cursor-pointer"
+          className="flex-shrink-0 p-1.5 rounded-full text-[#1877F2] hover:bg-[#EBF3FE] transition-colors cursor-pointer"
           title="Attach Photo or Video"
         >
           <ImageIcon className="w-5 h-5" />
         </button>
 
         {/* Emoji Button — using the rich EmojiPicker */}
-        <EmojiPicker
-          onEmojiSelect={handleAddEmoji}
-          position="top-left"
-          size="md"
-        />
+        <div className="flex-shrink-0">
+          <EmojiPicker
+            onEmojiSelect={handleAddEmoji}
+            position="top-left"
+            size="md"
+          />
+        </div>
 
         {/* Text Input */}
         <input
@@ -351,14 +352,14 @@ export default function ChatBox({ chat, onClose, onToggleMinimize, offsetIndex =
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Message..."
-          className="flex-1 px-3 py-1.5 text-sm bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white rounded-full border border-transparent focus:border-[#1877F2] outline-none text-[#050505] transition-all"
+          className="flex-1 min-w-0 px-3 py-1.5 text-sm bg-[#F0F2F5] hover:bg-[#E4E6EB] focus:bg-white rounded-full border border-transparent focus:border-[#1877F2] outline-none text-[#050505] transition-all"
         />
 
         {/* Send Button */}
         <button
           type="submit"
           disabled={!inputText.trim() && !mediaFile}
-          className="p-2 rounded-full bg-[#1877F2] text-white hover:bg-[#166FE5] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs"
+          className="flex-shrink-0 p-2 rounded-full bg-[#1877F2] text-white hover:bg-[#166FE5] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs"
           title="Send"
         >
           <Send className="w-4 h-4" />
