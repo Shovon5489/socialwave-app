@@ -62,4 +62,25 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+/**
+ * Optional auth — attach req.user if valid JWT is present, otherwise continue.
+ */
+const optionalAuth = async (req, res, next) => {
+  try {
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer ')
+    ) {
+      const token = req.headers.authorization.split(' ')[1];
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = { id: decoded.id, role: decoded.role };
+      }
+    }
+  } catch (_) {
+    // Ignore invalid/expired token for optional auth routes
+  }
+  next();
+};
+
+module.exports = { protect, authorize, optionalAuth };
