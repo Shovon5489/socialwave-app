@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Bell, Bookmark, Search, UserPlus, Settings, Shield, Clock } from 'lucide-react';
+import { Home, Users, Bell, Bookmark, Search, Settings, Check, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { userAPI } from '../../utils/api';
 import Avatar from '../ui/Avatar';
+import toast from 'react-hot-toast';
 
 const navLinks = [
   { to: '/feed', icon: Home, label: 'Feed', color: 'text-[#1877F2]' },
@@ -11,15 +14,46 @@ const navLinks = [
   { to: '/search', icon: Search, label: 'Search', color: 'text-[#10B981]' },
 ];
 
-const mockRequests = [
-  { id: '1', firstName: 'Alice', lastName: 'Johnson', username: 'alicej', mutualFriends: 3 },
-  { id: '2', firstName: 'Bob', lastName: 'Smith', username: 'bobsmith', mutualFriends: 1 },
-];
-
 export default function LeftSidebar() {
   const { user } = useAuth();
   const location = useLocation();
+  const [requests, setRequests] = useState([]);
   const isActive = (path) => location.pathname === path;
+
+  useEffect(() => {
+    let mounted = true;
+    const loadRequests = async () => {
+      try {
+        const res = await userAPI.getFriendRequests();
+        const data = res.data?.data?.requests || res.data?.requests || [];
+        if (mounted) setRequests(data);
+      } catch (_) {}
+    };
+    if (user) loadRequests();
+    return () => {
+      mounted = false;
+    };
+  }, [user?._id]);
+
+  const handleAccept = async (personId, name) => {
+    try {
+      await userAPI.acceptFriendRequest(personId);
+      setRequests((prev) => prev.filter((r) => (r.from?._id || r.from || r._id) !== personId));
+      toast.success(`You and ${name} are now friends!`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to accept request');
+    }
+  };
+
+  const handleDecline = async (personId) => {
+    try {
+      await userAPI.declineFriendRequest(personId);
+      setRequests((prev) => prev.filter((r) => (r.from?._id || r.from || r._id) !== personId));
+      toast.success('Friend request deleted');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to decline request');
+    }
+  };
 
   return (
     <aside className="hidden lg:flex flex-col w-64 xl:w-72 flex-shrink-0 pr-2">
@@ -72,38 +106,59 @@ export default function LeftSidebar() {
 
         <div className="my-2 border-t border-gray-300/70" />
 
-        {/* Friend Requests Preview */}
-        {mockRequests.length > 0 && (
+        {/* Real Friend Requests Preview */}
+        {requests.length > 0 && (
           <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between mb-2.5">
-              <h3 className="font-bold text-[#050505] text-[14px]">Friend requests</h3>
+              <h3 className="font-bold text-[#050505] text-[14px]">Friend requests ({requests.length})</h3>
               <Link to="/friends" className="text-xs text-[#1877F2] hover:underline font-semibold">
                 See all
               </Link>
             </div>
             <div className="space-y-2.5">
-              {mockRequests.map((req) => (
-                <div key={req.id} className="flex items-center gap-2.5">
-                  <Avatar name={`${req.firstName} ${req.lastName}`} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-[#050505] truncate">
-                      {req.firstName} {req.lastName}
-                    </p>
-                    <p className="text-[11px] text-[#65676B]">{req.mutualFriends} mutual friends</p>
+              {requests.slice(0, 4).map((req) => {
+                const person = req.from || req;
+                const personId = person._id || person.id;
+                return (
+                  <div key={req._id || personId} className="flex items-center gap-2.5">
+                    <Link to={`/profile/${person.username}`} className="flex-shrink-0">
+                      <Avatar src={person.avatar} name={`${person.firstName || ''} ${person.lastName || ''}`} size="sm" />
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <Link to={`/profile/${person.username}`} className="text-[13px] font-semibold text-[#050505] truncate block hover:underline">
+                        {person.firstName} {person.lastName}
+                      </Link>
+                      <p className="text-[11px] text-[#65676B] truncate">@{person.username}</p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleAccept(personId, person.firstName)}
+                        className="p-1.5 rounded-full bg-[#1877F2] text-white hover:bg-[#166FE5] transition-colors cursor-pointer"
+                        title="Confirm"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDecline(personId)}
+                        className="p-1.5 rounded-full bg-[#E4E6EB] text-[#050505] hover:bg-[#D8DADF] transition-colors cursor-pointer"
+                        title="Delete"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <button className="p-1.5 rounded-full bg-[#EBF3FE] text-[#1877F2] hover:bg-[#1877F2] hover:text-white transition-colors">
-                    <UserPlus className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Facebook Style Footer */}
+        {/* SocialWave Footer */}
         <div className="px-3 pt-3 text-xs text-[#65676B] space-y-1">
           <p className="leading-relaxed">
-            Privacy · Terms · Advertising · Ad Choices · Cookies · More · Meta © 2024
+            Privacy · Terms · Advertising · Cookies · SocialWave © 2026
           </p>
         </div>
       </div>

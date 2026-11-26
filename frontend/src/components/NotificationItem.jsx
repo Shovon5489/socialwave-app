@@ -1,10 +1,51 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, MessageSquare, UserPlus, Share2, AtSign } from 'lucide-react';
 import Avatar from './ui/Avatar';
 import { formatRelativeTime } from '../utils/helpers';
+import { userAPI } from '../utils/api';
+import toast from 'react-hot-toast';
 
 export default function NotificationItem({ notification, onRead }) {
   const { _id, sender, type, post, isRead, createdAt, message } = notification;
+  const [reqState, setReqState] = useState('idle'); // idle | accepted | declined
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const senderId = sender?._id || sender?.id;
+
+  const handleConfirm = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!senderId || actionLoading) return;
+    try {
+      setActionLoading(true);
+      await userAPI.acceptFriendRequest(senderId);
+      setReqState('accepted');
+      if (!isRead && onRead) onRead(_id);
+      toast.success(`You and ${sender?.firstName || sender?.fullName || 'User'} are now friends!`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to accept request');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDecline = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!senderId || actionLoading) return;
+    try {
+      setActionLoading(true);
+      await userAPI.declineFriendRequest(senderId);
+      setReqState('declined');
+      if (!isRead && onRead) onRead(_id);
+      toast.success('Friend request deleted');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to decline request');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const getIcon = () => {
     switch (type) {
@@ -57,6 +98,35 @@ export default function NotificationItem({ notification, onRead }) {
         <span className="text-xs text-gray-500 mt-1 block">
           {formatRelativeTime(createdAt)}
         </span>
+
+        {type === 'friend_request' && senderId && (
+          <div className="mt-2.5 flex items-center gap-2">
+            {reqState === 'idle' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={actionLoading}
+                  className="px-4 py-1.5 rounded-lg bg-[#1877F2] hover:bg-[#166FE5] text-white text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Confirm
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDecline}
+                  disabled={actionLoading}
+                  className="px-4 py-1.5 rounded-lg bg-[#E4E6EB] hover:bg-[#D8DADF] text-[#050505] text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Delete
+                </button>
+              </>
+            ) : reqState === 'accepted' ? (
+              <span className="text-xs font-semibold text-green-600">Friend request accepted ✓</span>
+            ) : (
+              <span className="text-xs font-medium text-gray-500">Request removed</span>
+            )}
+          </div>
+        )}
       </div>
 
       {!isRead && (

@@ -42,9 +42,16 @@ export default function ProfilePage() {
       setProfileUser(userData);
 
       if (userData && currentUser) {
-        if (userData.friends?.some((f) => (f._id || f) === currentUser._id)) {
+        const myId = (currentUser._id || currentUser.id)?.toString();
+        const theirId = (userData._id || userData.id)?.toString();
+        if (userData.friends?.some((f) => (f._id || f)?.toString() === myId)) {
           setFriendStatus('friends');
-        } else if (userData.friendRequests?.some((r) => (r.from?._id || r.from || r) === currentUser._id)) {
+        } else if (
+          currentUser.friendRequests?.some((r) => (r.from?._id || r.from || r)?.toString() === theirId) ||
+          userData.sentFriendRequests?.some((id) => (id?._id || id)?.toString() === myId)
+        ) {
+          setFriendStatus('received');
+        } else if (userData.friendRequests?.some((r) => (r.from?._id || r.from || r)?.toString() === myId)) {
           setFriendStatus('sent');
         } else {
           setFriendStatus('none');
@@ -122,6 +129,10 @@ export default function ProfilePage() {
         await userAPI.sendFriendRequest(profileUser._id);
         setFriendStatus('sent');
         toast.success('Friend request sent');
+      } else if (friendStatus === 'received') {
+        await userAPI.acceptFriendRequest(profileUser._id);
+        setFriendStatus('friends');
+        toast.success(`You and ${profileUser.firstName} are now friends!`);
       } else if (friendStatus === 'friends') {
         await userAPI.removeFriend(profileUser._id);
         setFriendStatus('none');
@@ -133,6 +144,20 @@ export default function ProfilePage() {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeclineReceived = async () => {
+    if (!profileUser?._id) return;
+    try {
+      setActionLoading(true);
+      await userAPI.declineFriendRequest(profileUser._id);
+      setFriendStatus('none');
+      toast.success('Friend request deleted');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to decline request');
     } finally {
       setActionLoading(false);
     }
@@ -286,25 +311,48 @@ export default function ProfilePage() {
                   </>
                 ) : (
                   <>
-                    <Button
-                      variant={friendStatus === 'friends' ? 'secondary' : 'primary'}
-                      size="sm"
-                      loading={actionLoading}
-                      onClick={handleFriendAction}
-                      icon={
-                        friendStatus === 'friends'
-                          ? UserCheck
+                    {friendStatus === 'received' ? (
+                      <>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          loading={actionLoading}
+                          onClick={handleFriendAction}
+                          icon={UserCheck}
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={actionLoading}
+                          onClick={handleDeclineReceived}
+                          icon={UserX}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant={friendStatus === 'friends' ? 'secondary' : 'primary'}
+                        size="sm"
+                        loading={actionLoading}
+                        onClick={handleFriendAction}
+                        icon={
+                          friendStatus === 'friends'
+                            ? UserCheck
+                            : friendStatus === 'sent'
+                            ? UserX
+                            : UserPlus
+                        }
+                      >
+                        {friendStatus === 'friends'
+                          ? 'Friends'
                           : friendStatus === 'sent'
-                          ? UserX
-                          : UserPlus
-                      }
-                    >
-                      {friendStatus === 'friends'
-                        ? 'Friends'
-                        : friendStatus === 'sent'
-                        ? 'Request Sent'
-                        : 'Add Friend'}
-                    </Button>
+                          ? 'Cancel Request'
+                          : 'Add Friend'}
+                      </Button>
+                    )}
                     <Button
                       variant="primary"
                       size="sm"
